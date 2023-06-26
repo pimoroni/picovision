@@ -1,0 +1,193 @@
+name: MicroPython Firmware
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [created]
+
+env:
+  MICROPYTHON_VERSION: 856e08b1931b88271816a2f60648f6ff332235b2
+  PIMORONI_PICO_VERSION: v1.20.3
+  WORKFLOW_VERSION: v1
+
+jobs:
+  deps:
+    runs-on: ubuntu-20.04
+    name: Dependencies
+    steps:
+    - name: Workspace Cache
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: ${{runner.workspace}}
+        key: workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
+        restore-keys: |
+          workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
+
+    # Check out MicroPython
+    - name: Checkout MicroPython
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/checkout@v3
+      with:
+        repository: micropython/micropython
+        ref: ${{env.MICROPYTHON_VERSION}}
+        submodules: false  # MicroPython submodules are hideously broken
+        path: micropython
+
+    - name: Fetch Pico submodules
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: micropython
+      run: |
+        git submodule update --init lib/pico-sdk
+        git submodule update --init lib/cyw43-driver
+        git submodule update --init lib/lwip
+        git submodule update --init lib/mbedtls
+        git submodule update --init lib/micropython-lib
+        git submodule update --init lib/tinyusb
+        git submodule update --init lib/btstack
+
+    - name: Build mpy-cross
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: micropython/mpy-cross
+      run: make
+
+  build:
+    needs: deps
+    name: Build ${{matrix.name}}
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - name: PicoVision
+            shortname: picovision
+            board: PIMORONI_PICOVISION
+            # 0x10000000 + (2*1024*1024) - (848*1024)
+            dir2uf2_fs_start: 269664256
+            dir2uf2_fs_size: 868352
+
+    env:
+      RELEASE_FILE: pimoroni-${{matrix.shortname}}-${{github.event.release.tag_name || github.sha}}-micropython.uf2
+      RELEASE_FILE_WITH_EXAMPLES: pimoroni-${{matrix.shortname}}-${{github.event.release.tag_name || github.sha}}-micropython-with-examples.uf2
+      FIRMWARE_DIR: "$GITHUB_WORKSPACE/picovision/firmware"
+      BOARD_DIR: "$GITHUB_WORKSPACE/picovision/firmware/${{matrix.board}}"
+      EXAMPLES_DIR: "$GITHUB_WORKSPACE/picovision/examples"
+
+    steps:
+    - name: Compiler Cache
+      uses: actions/cache@v3
+      with:
+        path: /home/runner/.ccache
+        key: ccache-micropython-${{matrix.shortname}}-${{github.ref}}-${{github.sha}}
+        restore-keys: |
+          ccache-micropython-${{matrix.shortname}}-${{github.ref}}
+          ccache-micropython-${{matrix.shortname}}-
+
+    - name: Workspace Cache
+      uses: actions/cache@v3
+      with:
+        path: ${{runner.workspace}}
+        key: workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
+        restore-keys: |
+          workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
+
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+        path: picovision
+
+    # Check out Pimoroni Pico
+    - uses: actions/checkout@v3
+      with:
+        repository: pimoroni/pimoroni-pico
+        ref: ${{env.PIMORONI_PICO_VERSION}}
+        submodules: true
+        path: pimoroni-pico
+
+    # Check out dir2u2f
+    - uses: actions/checkout@v3
+      with:
+        repository: gadgetoid/dir2uf2
+        ref: v0.0.1
+        path: dir2uf2
+
+    # HACK: Patch startup overclock into Pico SDK
+    - name: "HACK: Startup Overclock Patch"
+      shell: bash
+      working-directory: micropython/lib/pico-sdk
+      run: |
+        git apply "${{env.FIRMWARE_DIR}}/startup_overclock.patch"
+
+    - name: "HACK: CMakeLists.txt Disable C++ Exceptions Patch"
+      shell: bash
+      working-directory: micropython
+      run: git apply "${{env.FIRMWARE_DIR}}/micropython_nano_specs.patch"
+
+    # Install apt packages
+    - name: Install CCache & Compiler
+      shell: bash
+      run:
+        sudo apt update && sudo apt install ccache gcc-arm-none-eabi
+
+    # Build firmware
+    - name: Configure MicroPython
+      shell: bash
+      working-directory: micropython/ports/rp2
+      run: |
+        cmake -S . -B build -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=${{env.BOARD_DIR}}/micropython.cmake -DMICROPY_BOARD_DIR=${{env.BOARD_DIR}} -DMICROPY_BOARD=${{env.BOARD}} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    - name: Build MicroPython
+      shell: bash
+      working-directory: micropython/ports/rp2
+      run: |
+        ccache --zero-stats || true
+        cmake --build build -j 2
+        ccache --show-stats || true
+
+    - name: Rename .uf2 for artifact
+      shell: bash
+      working-directory: micropython/ports/rp2/build
+      run: |
+        cp firmware.uf2 ${{env.RELEASE_FILE}}
+
+    - name: Append Filesystem
+      shell: bash
+      run: |
+        python3 -m pip install littlefs-python
+        ./dir2uf2/dir2uf2 --fs-start ${{matrix.dir2uf2_fs_start}} --fs-size ${{matrix.dir2uf2_fs_size}} --append-to micropython/ports/rp2/build/${{env.RELEASE_FILE}} --manifest ${{env.BOARD_DIR}}/uf2-manifest.txt --filename with-examples.uf2 ${{env.EXAMPLES_DIR}}/
+
+    - name: Store .uf2 as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{env.RELEASE_FILE}}
+        path: micropython/ports/rp2/build/${{env.RELEASE_FILE}}
+
+    - name: Store .uf2 + Examples as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
+        path: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
+
+    - name: Upload .uf2
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        asset_path: micropython/ports/rp2/build/${{env.RELEASE_FILE}}
+        upload_url: ${{github.event.release.upload_url}}
+        asset_name: ${{env.RELEASE_FILE}}
+        asset_content_type: application/octet-stream
+
+    - name: Upload .uf2 + Examples
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        asset_path: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
+        upload_url: ${{github.event.release.upload_url}}
+        asset_name: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
+        asset_content_type: application/octet-stream

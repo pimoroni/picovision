@@ -1,0 +1,17 @@
+{
+    "deploy": [
+        "../deploy.md"
+    ],
+    "docs": "",
+    "features": [
+        "HDMI",
+        "Buttons"
+    ],
+    "images": [
+    ],
+    "mcu": "rp2040",
+    "product": "Pimoroni PicoVision (2MiB)",
+    "thumbnail": "",
+    "url": "https://shop.pimoroni.com/products/picovision",
+    "vendor": "Pimoroni"
+}
