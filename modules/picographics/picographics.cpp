@@ -20,12 +20,12 @@ const std::string_view mp_obj_to_string_r(const mp_obj_t &obj) {
     mp_raise_TypeError("can't convert object to str implicitly");
 }
 
+static DVDisplay dv_display;
+
 typedef struct _ModPicoGraphics_obj_t {
     mp_obj_base_t base;
     PicoGraphics *graphics;
-    DVDisplay *display;
     void *spritedata;
-    //mp_obj_t scanline_callback; // Not really feasible in MicroPython
 } ModPicoGraphics_obj_t;
 
 size_t get_required_buffer_size(PicoGraphicsPenType pen_type, uint width, uint height) {
@@ -66,22 +66,20 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     // Create an instance of the graphics library and DV display driver
     switch((PicoGraphicsPenType)pen_type) {
         case PEN_DV_RGB888:
-            self->display = m_new_class(DVDisplay, width, height, DVDisplay::MODE_RGB888);
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, width, height, *(IDirectDisplayDriver<RGB888> *)self->display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, width, height, *(IDirectDisplayDriver<RGB888> *)&dv_display);
+            dv_display.init(width, height, DVDisplay::MODE_RGB888);
             break;
         case PEN_DV_RGB555:
-            self->display = m_new_class(DVDisplay, width, height, DVDisplay::MODE_RGB555);
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, width, height, *(IDirectDisplayDriver<uint16_t> *)self->display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, width, height, *(IDirectDisplayDriver<uint16_t> *)&dv_display);
+            dv_display.init(width, height, DVDisplay::MODE_RGB555);
             break;
         case PEN_DV_P5:
-            self->display = m_new_class(DVDisplay, width, height, DVDisplay::MODE_PALETTE);
-            self->graphics = m_new_class(PicoGraphics_PenDV_P5, width, height, *(IPaletteDisplayDriver *)self->display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_P5, width, height, *(IPaletteDisplayDriver *)&dv_display);
+            dv_display.init(width, height, DVDisplay::MODE_PALETTE);
             break;
         default:
             break;
     }
-
-    self->display->init();
 
     self->spritedata = nullptr;
 
@@ -89,14 +87,19 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     for(auto x = 0u; x < 2u; x++){
         self->graphics->set_pen(0);
         self->graphics->clear();
-        self->display->flip();
+        dv_display.flip();
     }
 
     return MP_OBJ_FROM_PTR(self);
 }
 
 mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {
-    (void)self_in;
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    for(auto x = 0u; x < 2u; x++){
+        self->graphics->set_pen(0);
+        self->graphics->clear();
+        dv_display.flip();
+    }
     return mp_const_none;
 }
 
@@ -186,8 +189,8 @@ mp_obj_t ModPicoGraphics_get_bounds(mp_obj_t self_in) {
 }
 
 mp_obj_t ModPicoGraphics_update(mp_obj_t self_in) {
-    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
-    self->display->flip();
+    (void)self_in;
+    dv_display.flip();
     return mp_const_none;
 }
 
