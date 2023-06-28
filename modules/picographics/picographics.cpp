@@ -96,12 +96,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
 }
 
 mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {
-    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
-    for(auto x = 0u; x < 2u; x++){
-        self->graphics->set_pen(0);
-        self->graphics->clear();
-        dv_display.flip();
-    }
+    dv_display.reset();
     return mp_const_none;
 }
 
