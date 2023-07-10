@@ -8,6 +8,7 @@ using namespace pimoroni;
 
 extern "C" {
 #include "picographics.h"
+#include "pimoroni_i2c.h"
 #include "py/stream.h"
 #include "py/reader.h"
 #include "extmod/vfs.h"
@@ -20,7 +21,8 @@ const std::string_view mp_obj_to_string_r(const mp_obj_t &obj) {
     mp_raise_TypeError("can't convert object to str implicitly");
 }
 
-static DVDisplay dv_display;
+static I2C dv_i2c(DVDisplay::I2C_SDA, DVDisplay::I2C_SCL);
+static DVDisplay dv_display(&dv_i2c);
 
 typedef struct _ModPicoGraphics_obj_t {
     mp_obj_base_t base;
@@ -94,12 +96,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
 }
 
 mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {
-    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
-    for(auto x = 0u; x < 2u; x++){
-        self->graphics->set_pen(0);
-        self->graphics->clear();
-        dv_display.flip();
-    }
+    dv_display.reset();
     return mp_const_none;
 }
 
@@ -599,5 +596,14 @@ mp_obj_t ModPicoGraphics_line(size_t n_args, const mp_obj_t *args) {
     }
 
     return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_get_i2c(mp_obj_t self_in) {
+    _PimoroniI2C_obj_t* i2c_obj = m_new_obj(_PimoroniI2C_obj_t);
+    i2c_obj->base.type = &PimoroniI2C_type;
+
+    i2c_obj->i2c = &dv_i2c;
+
+    return i2c_obj;
 }
 }

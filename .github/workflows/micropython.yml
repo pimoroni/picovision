@@ -101,7 +101,7 @@ jobs:
     # Check out Pimoroni Pico
     - uses: actions/checkout@v3
       with:
-        repository: pimoroni/pimoroni-pico
+        repository: MichaelBell/pimoroni-pico
         ref: ${{env.PIMORONI_PICO_VERSION}}
         submodules: true
         path: pimoroni-pico
