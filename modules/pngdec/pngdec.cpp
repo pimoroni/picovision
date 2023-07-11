@@ -94,10 +94,13 @@ MICROPY_EVENT_POLL_HOOK
     // Can we clip beforehand and make this faster?
     int y = pDraw->y;
 
-    mp_printf(&mp_plat_print, "Drawing scanline at %d, %dbpp, type: %d, width: %d pitch: %d\n", y, pDraw->iBpp, pDraw->iPixelType, pDraw->iWidth, pDraw->iPitch);
-    // Types 2 and 6
-    if(pDraw->iPixelType == PNG_PIXEL_TRUECOLOR || pDraw->iPixelType == PNG_PIXEL_TRUECOLOR_ALPHA) {
-        uint8_t *pixel = (uint8_t *)pDraw->pPixels;
+    // TODO we need to handle PicoGraphics palette pen types, plus grayscale and gray alpha PNG modes
+    // For DV P5 we could copy over the raw palette values (p & 0b00011111) and assume the user has prepped their palette accordingly
+    // also dither, maybe?
+
+    //mp_printf(&mp_plat_print, "Drawing scanline at %d, %dbpp, type: %d, width: %d pitch: %d alpha: %d\n", y, pDraw->iBpp, pDraw->iPixelType, pDraw->iWidth, pDraw->iPitch, pDraw->iHasAlpha);
+    uint8_t *pixel = (uint8_t *)pDraw->pPixels;
+    if(pDraw->iPixelType == PNG_PIXEL_TRUECOLOR ) {
         for(int x = 0; x < pDraw->iWidth; x++) {
             uint8_t r = *pixel++;
             uint8_t g = *pixel++;
@@ -105,69 +108,39 @@ MICROPY_EVENT_POLL_HOOK
             current_graphics->set_pen(r, g, b);
             current_graphics->pixel({current_position.x + x, current_position.y + y});
         }
-    }
-    /*if(pDraw->iBpp == 8) {
-        uint8_t *pixel = (uint8_t *)pDraw->pPixels;
+    } else if (pDraw->iPixelType == PNG_PIXEL_TRUECOLOR_ALPHA) {
         for(int x = 0; x < pDraw->iWidth; x++) {
-            current_graphics->set_pen((uint8_t)(*pixel >> 4));
-            current_graphics->pixel({current_position.x + x, current_position.y + y});
-            pixel++;
-        }
-    } else if(pDraw->iBpp == 4) {
-        uint8_t *pixels = (uint8_t *)pDraw->pPixels;
-        for(int x = 0; x < pDraw->iWidth; x++) {
-            int i = y * pDraw->iWidth + x;
-            uint8_t p = pixels[i / 2];
-            p >>= (i & 0b1) ? 0 : 4;
-            p &= 0xf;
-            current_graphics->set_pen(p);
-            current_graphics->pixel({current_position.x + x, current_position.y + y});
-        }
-    } else if(pDraw->iBpp == 1) {
-        uint8_t *pixels = (uint8_t *)pDraw->pPixels;
-        for(int x = 0; x < pDraw->iWidth; x++) {
-            int i = y * pDraw->iWidth + x;
-            uint8_t p = pixels[i / 8];
-            p >>= 7 - (i & 0b111);
-            p &= 0x1;
-            current_graphics->set_pen(p);
-            current_graphics->pixel({current_position.x + x, current_position.y + y});
-        }
-    } else {
-        for(int x = 0; x < pDraw->iWidth; x++) {
-            int i = y * pDraw->iWidth + x;
-            if (current_graphics->pen_type == PicoGraphics::PEN_RGB332) {
-                if (current_flags & FLAG_NO_DITHER) {
-                    // Posterized output to RGB332
-                    current_graphics->set_pen(RGB((RGB565)pDraw->pPixels[i]).to_rgb332());
-                    current_graphics->pixel({current_position.x + x, current_position.y + y});
-                } else {
-                    // Dithered output to RGB332
-                    current_graphics->set_pixel_dither({current_position.x + x, current_position.y + y}, (RGB565)(pDraw->pPixels[i]));
-                }
-            } else if (current_graphics->pen_type == PicoGraphics::PEN_RGB888) {
-                current_graphics->set_pen(RGB((RGB565)pDraw->pPixels[i]).to_rgb888());
+            uint8_t r = *pixel++;
+            uint8_t g = *pixel++;
+            uint8_t b = *pixel++;
+            uint8_t a = *pixel++;
+            if (a) {
+                current_graphics->set_pen(r, g, b);
                 current_graphics->pixel({current_position.x + x, current_position.y + y});
-            } else if (current_graphics->pen_type == PicoGraphics::PEN_P8 
-            || current_graphics->pen_type == PicoGraphics::PEN_P4
-            || current_graphics->pen_type == PicoGraphics::PEN_3BIT
-            || current_graphics->pen_type == PicoGraphics::PEN_INKY7) {
-                if (current_flags & FLAG_NO_DITHER) {
-                    int closest = RGB((RGB565)pDraw->pPixels[i]).closest(current_graphics->get_palette(), current_graphics->get_palette_size());
-                    if (closest == -1) {
-                        closest = 0;
-                    }
-                    current_graphics->set_pen(closest);
-                    current_graphics->pixel({current_position.x + x, current_position.y + y});
-                } else {
-                    current_graphics->set_pixel_dither({current_position.x + x, current_position.y + y}, RGB((RGB565)pDraw->pPixels[i]));
-                }
+            }
+        }
+    } else if (pDraw->iPixelType == PNG_PIXEL_INDEXED) {
+        uint8_t channels = pDraw->iHasAlpha ? 4 : 3;
+        for(int x = 0; x < pDraw->iWidth; x++) {
+            uint8_t i = 0;
+            if(pDraw->iBpp == 8) {
+                i = *pixel++;
             } else {
-                current_graphics->set_pen(pDraw->pPixels[i]);
+                i = pixel[x / 2];
+                i >>= (x & 0b1) ? 0 : 4;
+                i &= 0xf;
+            }
+            uint8_t *palette = (uint8_t *)&pDraw->pPalette[i * channels];
+            uint8_t r = *palette++;
+            uint8_t g = *palette++;
+            uint8_t b = *palette++;
+            uint8_t a = pDraw->iHasAlpha ? *palette++ : 1;
+            if (a) {
+                current_graphics->set_pen(r, g, b);
                 current_graphics->pixel({current_position.x + x, current_position.y + y});
-            } 
+            }
         }
-    }*/
+    }
 }
 
 mp_obj_t _PNG_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
