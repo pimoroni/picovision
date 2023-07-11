@@ -46,12 +46,14 @@ size_t get_required_buffer_size(PicoGraphicsPenType pen_type, uint width, uint h
 mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     ModPicoGraphics_obj_t *self = nullptr;
 
-    enum { ARG_display, ARG_pen_type, ARG_width, ARG_height };
+    enum { ARG_display, ARG_pen_type, ARG_width, ARG_height, ARG_frame_width, ARG_frame_height };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_display, MP_ARG_INT | MP_ARG_REQUIRED },
         { MP_QSTR_pen_type, MP_ARG_INT, { .u_int = PEN_DV_RGB888 } },
         { MP_QSTR_width, MP_ARG_INT, { .u_int = 320 } },
-        { MP_QSTR_height, MP_ARG_INT, { .u_int = 240 } }
+        { MP_QSTR_height, MP_ARG_INT, { .u_int = 240 } },
+        { MP_QSTR_frame_width, MP_ARG_INT, { .u_int = -1 } },
+        { MP_QSTR_frame_height, MP_ARG_INT, { .u_int = -1 } }
     };
 
     // Parse args.
@@ -63,21 +65,26 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
 
     int width = args[ARG_width].u_int;
     int height = args[ARG_height].u_int;
+    int frame_width = args[ARG_frame_width].u_int == -1 ? width : args[ARG_frame_width].u_int;
+    int frame_height = args[ARG_frame_height].u_int == -1 ? height : args[ARG_frame_height].u_int;
     int pen_type = args[ARG_pen_type].u_int;
 
     // Create an instance of the graphics library and DV display driver
     switch((PicoGraphicsPenType)pen_type) {
         case PEN_DV_RGB888:
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, width, height, *(IDirectDisplayDriver<RGB888> *)&dv_display);
-            dv_display.init(width, height, DVDisplay::MODE_RGB888);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, frame_width, frame_height, *(IDirectDisplayDriver<RGB888> *)&dv_display);
+            dv_display.init(width, height, DVDisplay::MODE_RGB888, frame_width, frame_height);
+            dv_display.set_mode(DVDisplay::MODE_RGB888);
             break;
         case PEN_DV_RGB555:
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, width, height, *(IDirectDisplayDriver<uint16_t> *)&dv_display);
-            dv_display.init(width, height, DVDisplay::MODE_RGB555);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, frame_width, frame_height, *(IDirectDisplayDriver<uint16_t> *)&dv_display);
+            dv_display.init(width, height, DVDisplay::MODE_RGB555, frame_width, frame_height);
+            dv_display.set_mode(DVDisplay::MODE_RGB555);
             break;
         case PEN_DV_P5:
-            self->graphics = m_new_class(PicoGraphics_PenDV_P5, width, height, *(IPaletteDisplayDriver *)&dv_display);
-            dv_display.init(width, height, DVDisplay::MODE_PALETTE);
+            self->graphics = m_new_class(PicoGraphics_PenDV_P5, frame_width, frame_height, *(IPaletteDisplayDriver *)&dv_display);
+            dv_display.init(width, height, DVDisplay::MODE_PALETTE, frame_width, frame_height);
+            dv_display.set_mode(DVDisplay::MODE_PALETTE);
             break;
         default:
             break;
@@ -99,6 +106,43 @@ mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {
     dv_display.reset();
     return mp_const_none;
 }
+
+// DV Display specific functions
+mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_x, ARG_y, ARG_scroll_index };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_x, MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_y, MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_scroll_index, MP_ARG_INT, { .u_int = 1 } }
+    };
+
+    // Parse args.
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    dv_display.set_display_offset(
+        Point(
+            args[ARG_x].u_int,
+            args[ARG_y].u_int
+        ),
+        args[ARG_scroll_index].u_int
+    );
+
+    return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_t *args) {
+    enum { ARG_self, ARG_scroll_index, ARG_min_y, ARG_max_y };
+
+    dv_display.set_scroll_idx_for_lines(
+        mp_obj_get_int(args[ARG_scroll_index]),
+        mp_obj_get_int(args[ARG_min_y]),
+        mp_obj_get_int(args[ARG_max_y]));
+
+    return mp_const_none;
+}
+
 
 mp_obj_t ModPicoGraphics_set_spritesheet(mp_obj_t self_in, mp_obj_t spritedata) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);

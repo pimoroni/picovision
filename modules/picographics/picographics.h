@@ -63,6 +63,10 @@ extern mp_obj_t ModPicoGraphics_module_RGB332_to_RGB(mp_obj_t rgb332);
 extern mp_obj_t ModPicoGraphics_module_RGB565_to_RGB(mp_obj_t rgb565);
 extern mp_obj_t ModPicoGraphics_get_required_buffer_size(mp_obj_t display_in, mp_obj_t pen_type_in);
 
+// DV Display specific functions
+extern mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
+extern mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_t *args);
+
 // Class methods
 extern mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 

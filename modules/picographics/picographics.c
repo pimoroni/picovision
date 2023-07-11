@@ -6,6 +6,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_module_RGB_to_RGB565_obj, ModPi
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_module_RGB332_to_RGB_obj, ModPicoGraphics_module_RGB332_to_RGB);
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_module_RGB565_to_RGB_obj, ModPicoGraphics_module_RGB565_to_RGB);
 
+// DV Display specific functions
+MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_set_display_offset_obj, 1, ModPicoGraphics_set_display_offset);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_set_scroll_index_for_lines_obj, 4, 4, ModPicoGraphics_set_scroll_index_for_lines);
+
 // Class Methods
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_update_obj, ModPicoGraphics_update);
 
@@ -55,6 +59,9 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_pen), MP_ROM_PTR(&ModPicoGraphics_set_pen_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_thickness), MP_ROM_PTR(&ModPicoGraphics_set_thickness_obj) },
     { MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&ModPicoGraphics_clear_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_set_display_offset), MP_ROM_PTR(&ModPicoGraphics_set_display_offset_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_scroll_index_for_lines), MP_ROM_PTR(&ModPicoGraphics_set_scroll_index_for_lines_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&ModPicoGraphics_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_clip), MP_ROM_PTR(&ModPicoGraphics_set_clip_obj) },
