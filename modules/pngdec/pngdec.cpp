@@ -1,6 +1,7 @@
 #include "lib/PNGdec.h"
 
 #include "micropython/modules/util.hpp"
+#include "drivers/dv_display/dv_display.hpp"
 #include "libraries/pico_graphics/pico_graphics.hpp"
 
 using namespace pimoroni;
@@ -15,8 +16,7 @@ extern "C" {
 typedef struct _ModPicoGraphics_obj_t {
     mp_obj_base_t base;
     PicoGraphics *graphics;
-    DisplayDriver *display;
-    void *buffer;
+    DVDisplay *display;
 } ModPicoGraphics_obj_t;
 
 typedef struct _PNG_obj_t {
@@ -35,7 +35,6 @@ static Point current_position = {0, 0};
 enum FLAGS : uint8_t {
     FLAG_NO_DITHER = 1u
 };
-
 
 void *pngdec_open_callback(const char *filename, int32_t *size) {
     mp_obj_t fn = mp_obj_new_str(filename, (mp_uint_t)strlen(filename));
@@ -139,6 +138,60 @@ MICROPY_EVENT_POLL_HOOK
                 current_graphics->set_pen(r, g, b);
                 current_graphics->pixel({current_position.x + x, current_position.y + y});
             }
+        }
+    }
+}
+
+void PNGDrawSprite(PNGDRAW *pDraw) {
+#ifdef MICROPY_EVENT_POLL_HOOK
+MICROPY_EVENT_POLL_HOOK
+#endif
+    // "pixel" is slow and clipped,
+    // guaranteeing we wont draw png data out of the framebuffer..
+    // Can we clip beforehand and make this faster?
+    int y = pDraw->y;
+
+    uint16_t *sprite_data = (uint16_t *)pDraw->pUser;
+    sprite_data += y * pDraw->iWidth;
+
+    // TODO we need to handle PicoGraphics palette pen types, plus grayscale and gray alpha PNG modes
+    // For DV P5 we could copy over the raw palette values (p & 0b00011111) and assume the user has prepped their palette accordingly
+    // also dither, maybe?
+
+    //mp_printf(&mp_plat_print, "Read sprite line at %d, %dbpp, type: %d, width: %d pitch: %d alpha: %d\n", y, pDraw->iBpp, pDraw->iPixelType, pDraw->iWidth, pDraw->iPitch, pDraw->iHasAlpha);
+    uint8_t *pixel = (uint8_t *)pDraw->pPixels;
+    if(pDraw->iPixelType == PNG_PIXEL_TRUECOLOR ) {
+        for(int x = 0; x < pDraw->iWidth; x++) {
+            uint16_t r = *pixel++;
+            uint16_t g = *pixel++;
+            uint16_t b = *pixel++;
+            *sprite_data++ = 0x8000 | ((r & 0xF8) << 7) | ((g & 0xF8) << 2) | (b >> 3);
+        }
+    } else if (pDraw->iPixelType == PNG_PIXEL_TRUECOLOR_ALPHA) {
+        for(int x = 0; x < pDraw->iWidth; x++) {
+            uint16_t r = *pixel++;
+            uint16_t g = *pixel++;
+            uint16_t b = *pixel++;
+            uint8_t a = *pixel++;
+            *sprite_data++ = (a ? 0x8000 : 0) | ((r & 0xF8) << 7) | ((g & 0xF8) << 2) | (b >> 3);
+        }
+    } else if (pDraw->iPixelType == PNG_PIXEL_INDEXED) {
+        uint8_t channels = pDraw->iHasAlpha ? 4 : 3;
+        for(int x = 0; x < pDraw->iWidth; x++) {
+            uint8_t i = 0;
+            if(pDraw->iBpp == 8) {
+                i = *pixel++;
+            } else {
+                i = pixel[x / 2];
+                i >>= (x & 0b1) ? 0 : 4;
+                i &= 0xf;
+            }
+            uint8_t *palette = (uint8_t *)&pDraw->pPalette[i * channels];
+            uint16_t r = *palette++;
+            uint16_t g = *palette++;
+            uint16_t b = *palette++;
+            uint8_t a = pDraw->iHasAlpha ? *palette++ : 1;
+            *sprite_data++ = (a ? 0x8000 : 0) | ((r & 0xF8) << 7) | ((g & 0xF8) << 2) | (b >> 3);
         }
     }
 }
@@ -270,6 +323,71 @@ mp_obj_t _PNG_decode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
     current_flags = 0;
 
     current_position = {0, 0};
+
+    // Close the file since we've opened it on-demand
+    self->png->close();
+
+    //m_free(self->png->getBuffer());
+
+    return result == 1 ? mp_const_true : mp_const_false;
+}
+
+// decode
+mp_obj_t _PNG_decode_as_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_index, ARG_scale, ARG_dither };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_index, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_scale, MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_dither, MP_ARG_OBJ, {.u_obj = mp_const_true} },
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    _PNG_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, _PNG_obj_t);
+
+    // TODO: Implement integer 1x/2x/3x scaling by repeating pixels?
+    //int f = args[ARG_scale].u_int;
+
+    current_flags = args[ARG_dither].u_obj == mp_const_false ? FLAG_NO_DITHER : 0;
+
+    // Just-in-time open of the filename/buffer we stored in self->file via open_RAM or open_file
+
+    // Source is a filename
+    int result = -1;
+
+    if(mp_obj_is_str_or_bytes(self->file)){
+        GET_STR_DATA_LEN(self->file, str, str_len);
+
+        result = self->png->open(
+            (const char*)str,
+            pngdec_open_callback,
+            pngdec_close_callback,
+            pngdec_read_callback,
+            pngdec_seek_callback,
+            PNGDrawSprite);
+
+    // Source is a buffer
+    } else {
+        mp_get_buffer_raise(self->file, &self->buf, MP_BUFFER_READ);
+
+        result = self->png->openRAM((uint8_t *)self->buf.buf, self->buf.len, PNGDraw);
+    }
+
+    //self->png->setBuffer((uint8_t *)m_malloc(self->png->getBufferSize()));
+
+    if(result != 0) mp_raise_msg(&mp_type_RuntimeError, "PNG: could not read file/buffer.");
+
+    uint16_t* buffer = (uint16_t*)m_malloc(self->png->getWidth() * self->png->getHeight() * sizeof(uint16_t));
+
+    result = self->png->decode((void *)buffer, 0);
+
+    self->graphics->display->define_sprite(args[ARG_index].u_int, self->png->getWidth(), self->png->getHeight(), buffer);
+
+    m_free(buffer);
+
+    current_flags = 0;
 
     // Close the file since we've opened it on-demand
     self->png->close();

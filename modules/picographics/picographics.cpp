@@ -27,7 +27,7 @@ static DVDisplay dv_display(&dv_i2c);
 typedef struct _ModPicoGraphics_obj_t {
     mp_obj_base_t base;
     PicoGraphics *graphics;
-    void *spritedata;
+    DVDisplay *display;
 } ModPicoGraphics_obj_t;
 
 size_t get_required_buffer_size(PicoGraphicsPenType pen_type, uint width, uint height) {
@@ -90,7 +90,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
             break;
     }
 
-    self->spritedata = nullptr;
+    self->display = &dv_display;
 
     // Clear each buffer
     for(auto x = 0u; x < 2u; x++){
@@ -143,7 +143,7 @@ mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_
     return mp_const_none;
 }
 
-
+#if 0
 mp_obj_t ModPicoGraphics_set_spritesheet(mp_obj_t self_in, mp_obj_t spritedata) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
     if(spritedata == mp_const_none) {
@@ -189,29 +189,21 @@ mp_obj_t ModPicoGraphics_load_spritesheet(mp_obj_t self_in, mp_obj_t filename) {
 
     return mp_const_none;
 }
+#endif
 
-mp_obj_t ModPicoGraphics_sprite(size_t n_args, const mp_obj_t *args) {
-    enum { ARG_self, ARG_sprite_x, ARG_sprite_y, ARG_x, ARG_y, ARG_scale, ARG_transparent };
+mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *args) {
+    enum { ARG_self, ARG_slot, ARG_sprite_index, ARG_x, ARG_y };
 
-    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self], ModPicoGraphics_obj_t);
-
-    if(self->spritedata == nullptr) return mp_const_false;
-
-    int scale = 1;
-    int transparent = 0;
-
-    if(n_args >= 6) scale = mp_obj_get_int(args[ARG_scale]);
-    if(n_args >= 7) transparent = mp_obj_get_int(args[ARG_transparent]);
-
-    self->graphics->sprite(
-        self->spritedata,
-        {mp_obj_get_int(args[ARG_sprite_x]), mp_obj_get_int(args[ARG_sprite_y])},
-        {mp_obj_get_int(args[ARG_x]), mp_obj_get_int(args[ARG_y])},
-        scale,
-        transparent
-    );
+    dv_display.set_sprite(mp_obj_get_int(args[ARG_slot]), 
+                          mp_obj_get_int(args[ARG_sprite_index]),
+                          {mp_obj_get_int(args[ARG_x]), mp_obj_get_int(args[ARG_y])});
 
     return mp_const_true;
+}
+
+mp_obj_t ModPicoGraphics_clear_sprite(mp_obj_t self_in, mp_obj_t slot) {
+    dv_display.clear_sprite(mp_obj_get_int(slot));
+    return mp_const_none;
 }
 
 mp_obj_t ModPicoGraphics_set_font(mp_obj_t self_in, mp_obj_t font) {
