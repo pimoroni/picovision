@@ -119,7 +119,6 @@ MICROPY_EVENT_POLL_HOOK
             }
         }
     } else if (pDraw->iPixelType == PNG_PIXEL_INDEXED) {
-        uint8_t channels = pDraw->iHasAlpha ? 4 : 3;
         for(int x = 0; x < pDraw->iWidth; x++) {
             uint8_t i = 0;
             if(pDraw->iBpp == 8) {
@@ -129,11 +128,10 @@ MICROPY_EVENT_POLL_HOOK
                 i >>= (x & 0b1) ? 0 : 4;
                 i &= 0xf;
             }
-            uint8_t *palette = (uint8_t *)&pDraw->pPalette[i * channels];
-            uint8_t r = *palette++;
-            uint8_t g = *palette++;
-            uint8_t b = *palette++;
-            uint8_t a = pDraw->iHasAlpha ? *palette++ : 1;
+            uint8_t r = pDraw->pPalette[(i * 3) + 0];
+            uint8_t g = pDraw->pPalette[(i * 3) + 1];
+            uint8_t b = pDraw->pPalette[(i * 3) + 2];
+            uint8_t a = pDraw->iHasAlpha ? pDraw->pPalette[768 + i] : 1;
             if (a) {
                 current_graphics->set_pen(r, g, b);
                 current_graphics->pixel({current_position.x + x, current_position.y + y});
@@ -176,7 +174,6 @@ MICROPY_EVENT_POLL_HOOK
             *sprite_data++ = (a ? 0x8000 : 0) | ((r & 0xF8) << 7) | ((g & 0xF8) << 2) | (b >> 3);
         }
     } else if (pDraw->iPixelType == PNG_PIXEL_INDEXED) {
-        uint8_t channels = pDraw->iHasAlpha ? 4 : 3;
         for(int x = 0; x < pDraw->iWidth; x++) {
             uint8_t i = 0;
             if(pDraw->iBpp == 8) {
@@ -186,11 +183,10 @@ MICROPY_EVENT_POLL_HOOK
                 i >>= (x & 0b1) ? 0 : 4;
                 i &= 0xf;
             }
-            uint8_t *palette = (uint8_t *)&pDraw->pPalette[i * channels];
-            uint16_t r = *palette++;
-            uint16_t g = *palette++;
-            uint16_t b = *palette++;
-            uint8_t a = pDraw->iHasAlpha ? *palette++ : 1;
+            uint16_t r = pDraw->pPalette[(i * 3) + 0];
+            uint16_t g = pDraw->pPalette[(i * 3) + 1];
+            uint16_t b = pDraw->pPalette[(i * 3) + 2];
+            uint8_t a = pDraw->iHasAlpha ? pDraw->pPalette[768 + i] : 1;
             *sprite_data++ = (a ? 0x8000 : 0) | ((r & 0xF8) << 7) | ((g & 0xF8) << 2) | (b >> 3);
         }
     }
