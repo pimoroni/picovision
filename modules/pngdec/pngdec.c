@@ -4,7 +4,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(PNG_del_obj, _PNG_del);
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(PNG_openRAM_obj, _PNG_openRAM);
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(PNG_openFILE_obj, _PNG_openFILE);
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(PNG_decode_obj, 1, _PNG_decode);
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(PNG_decode_as_sprite_obj, 2, _PNG_decode_as_sprite);
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(PNG_getWidth_obj, _PNG_getWidth);
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(PNG_getHeight_obj, _PNG_getHeight);
 
@@ -14,7 +13,6 @@ STATIC const mp_rom_map_elem_t PNG_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_open_RAM), MP_ROM_PTR(&PNG_openRAM_obj) },
     { MP_ROM_QSTR(MP_QSTR_open_file), MP_ROM_PTR(&PNG_openFILE_obj) },
     { MP_ROM_QSTR(MP_QSTR_decode), MP_ROM_PTR(&PNG_decode_obj) },
-    { MP_ROM_QSTR(MP_QSTR_decode_as_sprite), MP_ROM_PTR(&PNG_decode_as_sprite_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_width), MP_ROM_PTR(&PNG_getWidth_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_height), MP_ROM_PTR(&PNG_getHeight_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_height), MP_ROM_PTR(&PNG_getHeight_obj) },
