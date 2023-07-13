@@ -225,6 +225,46 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
 
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, ModPicoGraphics_obj_t);
 
+    // Try loading the file/stream and checking if it's a PNG graphic
+    // if it's *not* a PNG then assume it's a raw PicoVision sprite.
+    const char PNG_HEADER[] = {137, 80, 78, 71, 13, 10, 26, 10};
+
+    // Is the supplied filename a string or bytearray
+    if(mp_obj_is_str_or_bytes(args[ARG_filename].u_obj)){
+        GET_STR_DATA_LEN(args[ARG_filename].u_obj, str, str_len);
+
+        // It's a file, try opening it
+        int32_t fsize;
+        mp_obj_t *fhandle = (mp_obj_t *)pngdec_open_callback((const char*)str, &fsize);
+        void *buf = m_malloc(fsize);
+        int error;
+
+        mp_stream_read_exactly(fhandle, buf, sizeof(PNG_HEADER), &error);
+
+        if (strncmp((const char *)buf, PNG_HEADER, sizeof(PNG_HEADER)) != 0) {
+            mp_printf(&mp_plat_print, "Not a PNG, loading as a PVS sprite.\n");
+            mp_stream_read_exactly(fhandle, (uint8_t *)buf + sizeof(PNG_HEADER), fsize - sizeof(PNG_HEADER), &error);
+            self->display->load_pvs_sprite(args[ARG_index].u_int, (uint32_t *)buf, fsize);
+
+            return mp_const_none;
+        }
+
+    } else {
+        // It might be a buffer...
+        mp_buffer_info_t bufinfo;
+        mp_get_buffer_raise(args[ARG_filename].u_obj, &bufinfo, MP_BUFFER_READ);
+
+        if (strncmp((const char *)bufinfo.buf, PNG_HEADER, sizeof(PNG_HEADER)) != 0) {
+            mp_printf(&mp_plat_print, "Not a PNG, loading as a PVS sprite.\n");
+            self->display->load_pvs_sprite(args[ARG_index].u_int , (uint32_t*)bufinfo.buf, bufinfo.len);
+            m_del(uint8_t, bufinfo.buf, bufinfo.len);
+
+            return mp_const_none;
+        }
+
+        m_del(uint8_t, bufinfo.buf, bufinfo.len);
+    }
+
     // Construct a pngdec object with our callback and a null buffer
     // ask it to decode into a new, correctly-sized buffer
     _PNG_obj_t *pngdec = m_new_obj_with_finaliser(_PNG_obj_t);
