@@ -40,12 +40,11 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_triangle_obj, 7, 7, ModPicoG
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_line_obj, 5, 6, ModPicoGraphics_line);
 
 // Sprites
-MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_spritesheet_obj, ModPicoGraphics_set_spritesheet);
-MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_load_spritesheet_obj, ModPicoGraphics_load_spritesheet);
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_sprite_obj, 5, 7, ModPicoGraphics_sprite);
+MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_load_sprite_obj, 3, ModPicoGraphics_load_sprite);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_display_sprite_obj, 5, 5, ModPicoGraphics_display_sprite);
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_clear_sprite_obj, ModPicoGraphics_clear_sprite);
 
 // Utility
-//MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_scanline_callback_obj, ModPicoGraphics_set_scanline_callback);
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_get_bounds_obj, ModPicoGraphics_get_bounds);
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_font_obj, ModPicoGraphics_set_font);
 
@@ -76,9 +75,9 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_triangle), MP_ROM_PTR(&ModPicoGraphics_triangle_obj) },
     { MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&ModPicoGraphics_line_obj) },
 
-    { MP_ROM_QSTR(MP_QSTR_set_spritesheet), MP_ROM_PTR(&ModPicoGraphics_set_spritesheet_obj) },
-    { MP_ROM_QSTR(MP_QSTR_load_spritesheet), MP_ROM_PTR(&ModPicoGraphics_load_spritesheet_obj) },
-    { MP_ROM_QSTR(MP_QSTR_sprite), MP_ROM_PTR(&ModPicoGraphics_sprite_obj) },
+    { MP_ROM_QSTR(MP_QSTR_load_sprite), MP_ROM_PTR(&ModPicoGraphics_load_sprite_obj) },
+    { MP_ROM_QSTR(MP_QSTR_display_sprite), MP_ROM_PTR(&ModPicoGraphics_display_sprite_obj) },
+    { MP_ROM_QSTR(MP_QSTR_clear_sprite), MP_ROM_PTR(&ModPicoGraphics_clear_sprite_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_create_pen), MP_ROM_PTR(&ModPicoGraphics_create_pen_obj) },
     { MP_ROM_QSTR(MP_QSTR_create_pen_hsv), MP_ROM_PTR(&ModPicoGraphics_create_pen_hsv_obj) },
@@ -86,7 +85,6 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_reset_pen), MP_ROM_PTR(&ModPicoGraphics_reset_pen_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_palette), MP_ROM_PTR(&ModPicoGraphics_set_palette_obj) },
 
-    //{ MP_ROM_QSTR(MP_QSTR_set_scanline_callback), MP_ROM_PTR(&ModPicoGraphics_set_scanline_callback_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_bounds), MP_ROM_PTR(&ModPicoGraphics_get_bounds_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_font), MP_ROM_PTR(&ModPicoGraphics_set_font_obj) },
 
