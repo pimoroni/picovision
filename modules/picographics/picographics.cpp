@@ -7,7 +7,7 @@
 using namespace pimoroni;
 
 extern "C" {
-#include "lib/PNGdec.h"
+#include "PNGdec.h"
 #include "pngdec.h"
 #include "picographics.h"
 #include "pimoroni_i2c.h"
