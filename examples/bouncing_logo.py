@@ -5,7 +5,6 @@ from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555 as PEN
 from pngdec import PNG
 from machine import Pin
 
-
 """
 Pimoroni logo bouncing around on the screen
 Ensure sprite file in the pico
@@ -26,10 +25,12 @@ has_sprite = False  # set if the sprite file exists in the pico
 png = PNG(display)
 
 try:
-    png.open_file("pimpic.png")
+    for _ in range(2):
+        display.load_sprite("pimpic5.png", 1, scale=2**10)
+        display.update()
     has_sprite = True
 except OSError as ioe:
-    if ioe.errno not in (errno.ENOENT,):
+    if ioe.errno not in (errno.ENOENT):
         raise
     has_sprite = False
 
@@ -37,9 +38,9 @@ logos = []
 logos_count = 0
 
 # specify image dimensions and randomise starting position
-IMAGE_WIDTH = 100
-IMAGE_HEIGHT = 100
-DEFAULT_VELOCITY = 30  # set the default velocity of the image
+IMAGE_WIDTH = 30
+IMAGE_HEIGHT = 30
+DEFAULT_VELOCITY = 10  # set the default velocity of the image
 
 
 class Logo:
@@ -56,9 +57,10 @@ class Logo:
             DEFAULT_VELOCITY if random.randint(0, 1) == 1 else -DEFAULT_VELOCITY
         )
 
-    def draw(self):
+    def draw(self, n):
         if has_sprite:
-            png.decode(self.x_start, self.y_start, scale=(2, 2))
+#             png.decode(self.x_start, self.y_start, scale=(2, 2))
+            display.display_sprite(n,1,self.x_start, self.y_start)
         else:
             display.rectangle(self.x_start, self.y_start, 100, 100)
             display.set_pen(WHITE)
@@ -171,6 +173,7 @@ while True:
     if current_time - last_time > 500:
         if not y_btn.value():
             add_logo()
+            print(logos_count)
         last_time = current_time
 
     # fills the screen with black
@@ -190,6 +193,6 @@ while True:
         logo.y_end = logo.y_start + IMAGE_HEIGHT
         edge_collision(logo)
         object_collision(num)
-        logo.draw()
+        logo.draw(num)
 
     display.update()
