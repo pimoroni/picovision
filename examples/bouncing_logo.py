@@ -1,7 +1,6 @@
 import time
 import random
 import errno
-import math
 from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555 as PEN
 from pngdec import PNG
 from machine import Pin
@@ -27,7 +26,7 @@ has_sprite = False  # set if the sprite file exists in the pico
 png = PNG(display)
 
 try:
-    png.open_file("pimpic.png")
+    png.open_file("pimpic3.png")
     has_sprite = True
 except OSError as ioe:
     if ioe.errno not in (errno.ENOENT,):
@@ -62,6 +61,13 @@ class Logo:
             png.decode(self.x_start, self.y_start, scale=(2, 2))
         else:
             display.rectangle(self.x_start, self.y_start, 100, 100)
+            display.set_pen(WHITE)
+            display.text(
+                "File not found",
+                self.x_start,
+                (self.y_start + (self.y_end - self.y_start) // 2),
+                scale=1,
+            )
 
 
 # generate random colour when called
@@ -97,10 +103,11 @@ def edge_collision(logo):
 x_offset = DEFAULT_VELOCITY // 2
 y_offset = DEFAULT_VELOCITY // 2
 
+
 def object_collision(j):
     for i in range(logos_count):
         if j != i:  # ensures distinct logos
-             # right collision
+            # right collision
             if (
                 abs(logos[i].x_start - logos[j].x_end) < x_offset
                 and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT
@@ -146,6 +153,7 @@ def add_logo():
     global logos, logos_x, logos_y, logos_count
     new_logo = Logo(png)
     logos.append(new_logo)
+
     logos_count += 1
 
 
@@ -156,13 +164,12 @@ add_logo()  # add initial logo
 
 last_time = time.ticks_ms()
 
-
 while True:
     current_time = time.ticks_ms()
 
     # add logo when Y button is pressed
     if current_time - last_time > 500:
-        if y_btn.value() == False:
+        if not y_btn.value():
             add_logo()
         last_time = current_time
 
