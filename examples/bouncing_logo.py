@@ -18,6 +18,7 @@ WIDTH, HEIGHT = display.get_bounds()
 BLACK = display.create_pen(0, 0, 0)
 WHITE = display.create_pen(255, 255, 255)
 
+IMAGE_INDEX = 1
 y_btn = Pin(9, Pin.IN, Pin.PULL_UP)
 
 # load the sprite file
@@ -25,7 +26,10 @@ has_sprite = False  # set if the sprite file exists in the pico
 png = PNG(display)
 
 try:
-    png.open_file("pimpic3.png")
+    for _ in range(2):
+        display.load_sprite("pimpic5.png", IMAGE_INDEX)
+        display.update()
+#     png.open_file("pimpic3.png")
     has_sprite = True
 except OSError as ioe:
     if ioe.errno not in (errno.ENOENT):
@@ -55,10 +59,10 @@ class Logo:
             DEFAULT_VELOCITY if random.randint(0, 1) == 1 else -DEFAULT_VELOCITY
         )
 
-    def draw(self, n):
+    def draw(self, sprite_slot):
         if has_sprite:
 #             png.decode(self.x_start, self.y_start, scale=(2, 2))
-            display.display_sprite(n,1,self.x_start, self.y_start)
+            display.display_sprite(sprite_slot,1,self.x_start, self.y_start)
         else:
             display.rectangle(self.x_start, self.y_start, 100, 100)
             display.set_pen(WHITE)
