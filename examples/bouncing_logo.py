@@ -25,9 +25,7 @@ has_sprite = False  # set if the sprite file exists in the pico
 png = PNG(display)
 
 try:
-    for _ in range(2):
-        display.load_sprite("pimpic5.png", 1, scale=2**10)
-        display.update()
+    png.open_file("pimpic3.png")
     has_sprite = True
 except OSError as ioe:
     if ioe.errno not in (errno.ENOENT):
