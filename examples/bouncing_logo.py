@@ -27,7 +27,7 @@ png = PNG(display)
 
 try:
     for _ in range(2):
-        display.load_sprite("pimpic5.png", IMAGE_INDEX)
+        display.load_sprite("pimpic.png", IMAGE_INDEX)
         display.update()
 #     png.open_file("pimpic3.png")
     has_sprite = True
