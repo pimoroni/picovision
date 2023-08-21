@@ -1,5 +1,5 @@
 #include "drivers/dv_display/dv_display.hpp"
-#include "libraries/pico_graphics/pico_graphics.hpp"
+#include "libraries/pico_graphics/pico_graphics_dv.hpp"
 #include "common/pimoroni_common.hpp"
 
 #include "micropython/modules/util.hpp"
