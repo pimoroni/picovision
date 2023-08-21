@@ -21,6 +21,7 @@ pico_generate_pio_header(usermod_${MOD_NAME} ${PIMORONI_PICO_PATH}/drivers/aps64
 
 target_include_directories(usermod_${MOD_NAME} INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}
+    ${PIMORONI_PICO_PATH}/libraries/pngdec
 )
 
 target_compile_definitions(usermod_${MOD_NAME} INTERFACE
