@@ -26,4 +26,14 @@ namespace pimoroni {
     void PicoGraphics_PenDV_RGB888::set_pixel_span(const Point &p, uint l) {
         driver.write_pixel_span(p, l, color);
     }
+    void PicoGraphics_PenDV_RGB888::set_pixel_alpha(const Point &p, const uint8_t a) {
+        uint32_t src = 0;
+
+        driver.read_pixel_span(p, 2, &src);
+
+        // TODO: "uint" should be RGB888 but there's curently a mismatch between "uint32_t" and "unsigned int"
+        RGB888 blended = RGB((uint)src).blend(RGB((uint)color), a).to_rgb888();
+
+        driver.write_pixel(p, blended);
+    };
 }
