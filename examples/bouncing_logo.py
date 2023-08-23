@@ -25,7 +25,7 @@ LOGOSUB1_INDEX = 1
 LOGOSUB2_INDEX = 2
 LOGOSUB3_INDEX = 3
 LOGOSUB4_INDEX = 4
-
+SUB_IMAGE_SIZE = 32
 
 MAX_SPRITE_SLOTS = 16 
 MAX_LOGOS = MAX_SPRITE_SLOTS //4
@@ -33,11 +33,10 @@ MAX_LOGOS = MAX_SPRITE_SLOTS //4
 y_btn = Pin(9, Pin.IN, Pin.PULL_UP)
 
 
-# load the sprite file
 has_sprite = False  # set if the sprite file exists in the pico
 
-
 try:
+    # load the sprites
     for _ in range(2):
         display.load_sprite("pim1.png", LOGOSUB1_INDEX)
         display.load_sprite("pim2.png", LOGOSUB2_INDEX)
@@ -72,13 +71,17 @@ class Logo:
             DEFAULT_VELOCITY if random.randint(0, 1) == 1 else -DEFAULT_VELOCITY
         )
 
-    def draw(self, sprite_slot):
-        sprite_slot += 1
+    def draw(self, logo_id):
+        """ Draws the logo at its x and y positions
+            In order to display logo in 64 by 64 pixels, 4 sub images are displayed
+            Each subimage uses up a sprite slot
+            If any sub logo image is not present in the pico a rectangle is displayed instead"""
+        logo_num = logo_id + 1
         if has_sprite:
-            display.display_sprite(((sprite_slot *4) -3),LOGOSUB1_INDEX,self.x_start, self.y_start)
-            display.display_sprite((sprite_slot *4) -2,LOGOSUB2_INDEX,self.x_start + 32, self.y_start)
-#             display.display_sprite((sprite_slot *4) -1,LOGOSUB3_INDEX,self.x_start, self.y_start + 32)
-            display.display_sprite(sprite_slot*4,LOGOSUB4_INDEX,self.x_start + 32, self.y_start + 32)
+            display.display_sprite(((logo_num *4) -3), LOGOSUB1_INDEX, self.x_start, self.y_start)
+            display.display_sprite(((logo_num *4) -2), LOGOSUB2_INDEX, self.x_start + SUB_IMAGE_SIZE, self.y_start)
+            display.display_sprite(((logo_num *4) -1), LOGOSUB3_INDEX, self.x_start, self.y_start + SUB_IMAGE_SIZE)
+            display.display_sprite((logo_num *4), LOGOSUB4_INDEX, self.x_start + SUB_IMAGE_SIZE, self.y_start + SUB_IMAGE_SIZE)
         else:
             display.rectangle(self.x_start, self.y_start, 100, 100)
             display.set_pen(WHITE)
@@ -91,9 +94,9 @@ class Logo:
 
 
 
-# check for edge collisions and adjust velocities and positions accordingly
 def edge_collision(logo):
-    global text_colour
+    """Checks if logo hits the walls and reverses its velocity"""
+    #  Horizontal walls
     if (logo.x_start + IMAGE_WIDTH) >= WIDTH or logo.x_start < 0:
         logo.x_vel = -logo.x_vel
         if logo.x_start < 0:
@@ -101,7 +104,7 @@ def edge_collision(logo):
         elif (logo.x_start + IMAGE_WIDTH) > WIDTH:
             logo.x_start = WIDTH - IMAGE_WIDTH
         
-
+    #   Vertical walls
     if (logo.y_start + IMAGE_HEIGHT) >= HEIGHT or logo.y_start <= 0:
         logo.y_vel = -logo.y_vel
         if logo.y_start < 0:
@@ -111,17 +114,15 @@ def edge_collision(logo):
         
 
 
-# handle logo collisions
-x_offset = DEFAULT_VELOCITY // 2
-y_offset = DEFAULT_VELOCITY // 2
 
-
+offset = DEFAULT_VELOCITY // 2
 def object_collision(j):
+    """Checks if a given logo collides with any other logo on the screen"""
     for i in range(logos_count):
         if j != i:  # ensures distinct logos
             # right collision
             if (
-                abs(logos[i].x_start - logos[j].x_end) < x_offset
+                abs(logos[i].x_start - logos[j].x_end) < offset
                 and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT
             ):
                 if logos[i].x_vel < 0:
@@ -132,7 +133,7 @@ def object_collision(j):
 
             # left collision
             elif (
-                abs(logos[j].x_start - logos[i].x_end) < x_offset
+                abs(logos[j].x_start - logos[i].x_end) < offset
                 and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT
             ):
                 if logos[i].x_vel > 0:
@@ -143,7 +144,7 @@ def object_collision(j):
 
             # up collision
             elif (
-                abs(logos[i].y_start - logos[j].y_end) < y_offset
+                abs(logos[i].y_start - logos[j].y_end) < offset
                 and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH
             ):
                 if logos[i].y_vel < 0:
@@ -154,7 +155,7 @@ def object_collision(j):
 
             # down collision
             elif (
-                abs(logos[j].y_start - logos[i].y_end) < y_offset
+                abs(logos[j].y_start - logos[i].y_end) < offset
                 and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH
             ):
                 if logos[i].y_vel > 0:
@@ -163,8 +164,6 @@ def object_collision(j):
                     logos[j].y_vel *= -1
                 
                 
-
-# add logos
 def add_logo():
     global logos, logos_count
     new_logo = Logo()
@@ -185,8 +184,6 @@ def draw_background():
             display.set_pen(display.create_pen_hsv(h, 0.5, 1))
             display.rectangle(x * grid_size, y * grid_size, grid_size, grid_size)
 
-    
-text_colour = WHITE
 
 add_logo()  # add initial logo
 
@@ -215,7 +212,7 @@ while True:
     display.set_pen(WHITE)
     display.text(NAME, ((WIDTH - text_width) // 2), HEIGHT // 2 - text_height//2, scale=10)
 
-    # update positions for each logo and account for edge and object collisions
+    # update positions for each logo and display it while accounting for edge and object collisions
     for num in range(logos_count):
         logo = logos[num]
         logo.x_start += logo.x_vel
