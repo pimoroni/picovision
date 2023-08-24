@@ -8,12 +8,12 @@ using namespace pimoroni;
 
 extern "C" {
 #include "PNGdec.h"
-#include "pngdec.h"
 #include "picographics.h"
 #include "pimoroni_i2c.h"
 #include "py/stream.h"
 #include "py/reader.h"
 #include "extmod/vfs.h"
+
 
 const std::string_view mp_obj_to_string_r(const mp_obj_t &obj) {
     if(mp_obj_is_str_or_bytes(obj)) {
@@ -32,18 +32,10 @@ typedef struct _ModPicoGraphics_obj_t {
     DVDisplay *display;
 } ModPicoGraphics_obj_t;
 
-typedef struct _PNG_obj_t {
-    mp_obj_base_t base;
-    PNG *png;
-    void *dither_buffer;
-    mp_obj_t file;
-    mp_buffer_info_t buf;
-    PNG_DRAW_CALLBACK *decode_callback;
-    void *decode_target;
-    bool decode_into_buffer;
-    int width;
-    int height;
-} _PNG_obj_t;
+typedef struct _PNG_decode_target {
+    void *target;
+    Rect source = {0, 0, 0, 0};
+} _PNG_decode_target;
 
 size_t get_required_buffer_size(PicoGraphicsPenType pen_type, uint width, uint height) {
     switch(pen_type) {
@@ -58,29 +50,35 @@ size_t get_required_buffer_size(PicoGraphicsPenType pen_type, uint width, uint h
     }
 }
 
+//  Use file IO functions from PNGDEC module
+extern void *pngdec_open_callback(const char *filename, int32_t *size);
+extern void pngdec_close_callback(void *handle);
+extern int32_t pngdec_read_callback(PNGFILE *png, uint8_t *p, int32_t c);
+extern int32_t pngdec_seek_callback(PNGFILE *png, int32_t p);
+
 void PNGDrawSprite(PNGDRAW *pDraw) {
 #ifdef MICROPY_EVENT_POLL_HOOK
 MICROPY_EVENT_POLL_HOOK
 #endif
-    // "pixel" is slow and clipped,
-    // guaranteeing we wont draw png data out of the framebuffer..
-    // Can we clip beforehand and make this faster?
-    int y = pDraw->y;
+    _PNG_decode_target *target = (_PNG_decode_target*)pDraw->pUser;
 
-    uint16_t *sprite_data = (uint16_t *)pDraw->pUser;
-    sprite_data += y * pDraw->iWidth;
+    if(pDraw->y < target->source.y || pDraw->y >= target->source.y + target->source.h) return;
+
+    uint16_t *sprite_data = (uint16_t *)target->target;
+    sprite_data += (pDraw->y - target->source.y) * target->source.w;
 
     // TODO we need to handle PicoGraphics palette pen types, plus grayscale and gray alpha PNG modes
     // For DV P5 we could copy over the raw palette values (p & 0b00011111) and assume the user has prepped their palette accordingly
     // also dither, maybe?
 
-    //mp_printf(&mp_plat_print, "Read sprite line at %d, %dbpp, type: %d, width: %d pitch: %d alpha: %d\n", y, pDraw->iBpp, pDraw->iPixelType, pDraw->iWidth, pDraw->iPitch, pDraw->iHasAlpha);
+    //mp_printf(&mp_plat_print, "Read sprite line at %d, %dbpp, type: %d, width: %d pitch: %d alpha: %d\n", pDraw->y, pDraw->iBpp, pDraw->iPixelType, pDraw->iWidth, pDraw->iPitch, pDraw->iHasAlpha);
     uint8_t *pixel = (uint8_t *)pDraw->pPixels;
     if(pDraw->iPixelType == PNG_PIXEL_TRUECOLOR ) {
         for(int x = 0; x < pDraw->iWidth; x++) {
             uint16_t r = *pixel++;
             uint16_t g = *pixel++;
             uint16_t b = *pixel++;
+            if(x < target->source.x || x >= target->source.x + target->source.w) continue;
             *sprite_data++ = 0x8000 | ((r & 0xF8) << 7) | ((g & 0xF8) << 2) | (b >> 3);
         }
     } else if (pDraw->iPixelType == PNG_PIXEL_TRUECOLOR_ALPHA) {
@@ -89,6 +87,7 @@ MICROPY_EVENT_POLL_HOOK
             uint16_t g = *pixel++;
             uint16_t b = *pixel++;
             uint8_t a = *pixel++;
+            if(x < target->source.x || x >= target->source.x + target->source.w) continue;
             *sprite_data++ = (a ? 0x8000 : 0) | ((r & 0xF8) << 7) | ((g & 0xF8) << 2) | (b >> 3);
         }
     } else if (pDraw->iPixelType == PNG_PIXEL_INDEXED) {
@@ -97,10 +96,13 @@ MICROPY_EVENT_POLL_HOOK
             if(pDraw->iBpp == 8) {
                 i = *pixel++;
             } else {
-                i = pixel[x / 2];
+                i = *pixel;
                 i >>= (x & 0b1) ? 0 : 4;
                 i &= 0xf;
+                if (x & 1) pixel++;
             }
+            if(x < target->source.x || x >= target->source.x + target->source.w) continue;
+            // grab the colour from the palette
             uint16_t r = pDraw->pPalette[(i * 3) + 0];
             uint16_t g = pDraw->pPalette[(i * 3) + 1];
             uint16_t b = pDraw->pPalette[(i * 3) + 2];
@@ -211,13 +213,12 @@ mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_
 }
 
 mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_filename, ARG_index, ARG_scale, ARG_dither };
+    enum { ARG_self, ARG_filename, ARG_index, ARG_source };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_filename, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_index, MP_ARG_REQUIRED | MP_ARG_INT },
-        { MP_QSTR_scale, MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_dither, MP_ARG_OBJ, {.u_obj = mp_const_true} },
+        { MP_QSTR_source, MP_ARG_OBJ, {.u_obj = nullptr} }
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -242,10 +243,10 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
         mp_stream_read_exactly(fhandle, buf, sizeof(PNG_HEADER), &error);
 
         if (strncmp((const char *)buf, PNG_HEADER, sizeof(PNG_HEADER)) != 0) {
-            mp_printf(&mp_plat_print, "Not a PNG, loading as a PVS sprite.\n");
+            mp_printf(&mp_plat_print, "load_sprite: Not a PNG, loading as a PVS sprite.\n");
             mp_stream_read_exactly(fhandle, (uint8_t *)buf + sizeof(PNG_HEADER), fsize - sizeof(PNG_HEADER), &error);
             self->display->load_pvs_sprite(args[ARG_index].u_int, (uint32_t *)buf, fsize);
-
+            m_free(buf);
             return mp_const_none;
         }
 
@@ -255,7 +256,7 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
         mp_get_buffer_raise(args[ARG_filename].u_obj, &bufinfo, MP_BUFFER_READ);
 
         if (strncmp((const char *)bufinfo.buf, PNG_HEADER, sizeof(PNG_HEADER)) != 0) {
-            mp_printf(&mp_plat_print, "Not a PNG, loading as a PVS sprite.\n");
+            mp_printf(&mp_plat_print, "load_sprite: Not a PNG, loading as a PVS sprite.\n");
             self->display->load_pvs_sprite(args[ARG_index].u_int , (uint32_t*)bufinfo.buf, bufinfo.len);
             m_del(uint8_t, bufinfo.buf, bufinfo.len);
 
@@ -265,39 +266,74 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
         m_del(uint8_t, bufinfo.buf, bufinfo.len);
     }
 
-    // Construct a pngdec object with our callback and a null buffer
-    // ask it to decode into a new, correctly-sized buffer
-    _PNG_obj_t *pngdec = m_new_obj_with_finaliser(_PNG_obj_t);
-    pngdec->base.type = &PNG_type;
-    pngdec->png = m_new_class(PNG);
-    pngdec->decode_callback = PNGDrawSprite;
-    pngdec->decode_target = nullptr;
-    pngdec->decode_into_buffer = true;
-    pngdec->width = 0;
-    pngdec->height = 0;
+    PNG *png = m_new_class(PNG);
 
-    // Open the file, sets the width/height values
-    _PNG_openFILE(pngdec, args[ARG_filename].u_obj);
+    mp_obj_t file = args[ARG_filename].u_obj;
+
+    mp_buffer_info_t buf;
+
+    int result = -1;
+
+    if(mp_obj_is_str_or_bytes(file)){
+        GET_STR_DATA_LEN(file, str, str_len);
+
+        result = png->open(
+            (const char*)str,
+            pngdec_open_callback,
+            pngdec_close_callback,
+            pngdec_read_callback,
+            pngdec_seek_callback,
+            PNGDrawSprite);
+
+    // Source is a buffer
+    } else {
+        mp_get_buffer_raise(file, &buf, MP_BUFFER_READ);
+
+        result = png->openRAM((uint8_t *)buf.buf, buf.len, PNGDrawSprite);
+    }
+
+    if(result != 0) mp_raise_msg(&mp_type_RuntimeError, "load_sprite: could not read file/buffer.");
+
+    int width = png->getWidth();
+    int height = png->getHeight();
+
+    //mp_printf(&mp_plat_print, "load_sprite: Opened PNG %dx%d.\n", width, height);
+
+    _PNG_decode_target *decode_target = m_new(_PNG_decode_target, 1);
+    decode_target->target = nullptr;
+    decode_target->source = {0, 0, width, height};
+
+    if(mp_obj_is_type(args[ARG_source].u_obj, &mp_type_tuple)){
+        mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR2(args[ARG_source].u_obj, mp_obj_tuple_t);
+
+        if(tuple->len != 4) mp_raise_ValueError("load_sprite: source tuple must contain (x, y, w, h)");
+
+        decode_target->source = {
+            mp_obj_get_int(tuple->items[0]),
+            mp_obj_get_int(tuple->items[1]),
+            mp_obj_get_int(tuple->items[2]),
+            mp_obj_get_int(tuple->items[3])
+        };
+
+        width = decode_target->source.w;
+        height = decode_target->source.h;
+    }
 
     // Create a buffer big enough to hold the data decoded from PNG by our draw callback
-    pngdec->decode_target = m_malloc(pngdec->width * pngdec->height * sizeof(uint16_t));
+    decode_target->target = m_malloc(width * height * sizeof(uint16_t));
 
-    mp_obj_t decode_args[] = {
-        pngdec,
-        mp_obj_new_int(0),
-        mp_obj_new_int(0),
-        mp_obj_new_int(args[ARG_scale].u_int),
-        mp_const_false
-    };
-    _PNG_decode(MP_ARRAY_SIZE(args), &decode_args[0], (mp_map_t *)&mp_const_empty_map);
+    result = png->decode(decode_target, 0);
 
-    self->display->define_sprite(args[ARG_index].u_int, pngdec->width, pngdec->height, (uint16_t *)pngdec->decode_target);
+    // Close the file since we've opened it on-demand
+    png->close();
 
-    m_free(pngdec->decode_target);
-    m_free(pngdec->png);
-    m_free(pngdec);
+    self->display->define_sprite(args[ARG_index].u_int, width, height, (uint16_t *)(decode_target->target));
 
-    return mp_const_none;
+    m_free(decode_target->target);
+    m_free(decode_target);
+    m_free(png);
+
+    return result == 0 ? mp_const_true : mp_const_false;
 }
 
 mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *args) {
