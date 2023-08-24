@@ -113,7 +113,7 @@ class Logo:
 
 
 def edge_collision(logo):
-    """Checks if logo hits the walls and reverses its velocity"""
+    """Checks if logo hits the walls and reverse its velocity"""
     #  Horizontal walls
     if (logo.x_start + IMAGE_WIDTH) >= WIDTH or logo.x_start < 0:
         logo.x_vel = -logo.x_vel
@@ -131,56 +131,48 @@ def edge_collision(logo):
             logo.y_start = HEIGHT - IMAGE_HEIGHT
 
 
-offset = DEFAULT_VELOCITY // 2
+offset = DEFAULT_VELOCITY
 
 
 def object_collision(j):
-    """Checks if a given logo collides with any other logo on the screen"""
-    for i in range(logos_count):
-        if j != i:  # ensures distinct logos
-            # right collision
-            if (
-                abs(logos[i].x_start - logos[j].x_end) < offset
-                and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT
-            ):
-                if logos[i].x_vel < 0:
-                    logos[i].x_vel *= -1
-                if logos[j].x_vel > 0:
-                    logos[j].x_vel *= -1
+    """Checks if a given logo collides with other logos on the screen"""
+    for i in range(j+1, logos_count): # compares the logo with succeeding logos in the list
 
-            # left collision
-            elif (
-                abs(logos[j].x_start - logos[i].x_end) < offset
-                and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT
-            ):
-                if logos[i].x_vel > 0:
-                    logos[i].x_vel *= -1
-                if logos[j].x_vel < 0:
-                    logos[j].x_vel *= -1
+        # right collision
+        if abs(logos[i].x_start - logos[j].x_end) < offset \
+            and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT:
+            if logos[i].x_vel < 0:
+                logos[i].x_vel *= -1
+            if logos[j].x_vel > 0:
+                logos[j].x_vel *= -1
 
-            # up collision
-            elif (
-                abs(logos[i].y_start - logos[j].y_end) < offset
-                and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH
-            ):
-                if logos[i].y_vel < 0:
-                    logos[i].y_vel *= -1
-                if logos[j].y_vel > 0:
-                    logos[j].y_vel *= -1
+        # left collision
+        elif abs(logos[j].x_start - logos[i].x_end) < offset \
+            and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT:
+            if logos[i].x_vel > 0:
+                logos[i].x_vel *= -1
+            if logos[j].x_vel < 0:
+                logos[j].x_vel *= -1
 
-            # down collision
-            elif (
-                abs(logos[j].y_start - logos[i].y_end) < offset
-                and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH
-            ):
-                if logos[i].y_vel > 0:
-                    logos[i].y_vel *= -1
-                if logos[j].y_vel < 0:
-                    logos[j].y_vel *= -1
+        # up collision
+        elif abs(logos[i].y_start - logos[j].y_end) < offset \
+            and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH:
+            if logos[i].y_vel < 0:
+                logos[i].y_vel *= -1
+            if logos[j].y_vel > 0:
+                logos[j].y_vel *= -1
+
+        # down collision
+        elif abs(logos[j].y_start - logos[i].y_end) < offset \
+            and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH:
+            if logos[i].y_vel > 0:
+                logos[i].y_vel *= -1
+            if logos[j].y_vel < 0:
+                logos[j].y_vel *= -1
 
 
 def add_logo():
-    global logos, logos_count
+    global logos_count
     new_logo = Logo()
     logos.append(new_logo)
 
@@ -232,16 +224,20 @@ while True:
     display.text(
         NAME, ((WIDTH - text_width) // 2), HEIGHT // 2 - text_height // 2, scale=10
     )
+    
+    # Check for edge and object collisions which updates the velocity accordingly
+    for num in range(logos_count):
+        logo = logos[num]
+        edge_collision(logo)
+        object_collision(num)
 
-    # update positions for each logo and display it while accounting for edge and object collisions
+    # update positions for each logo and display it
     for num in range(logos_count):
         logo = logos[num]
         logo.x_start += logo.x_vel
         logo.y_start += logo.y_vel
         logo.x_end = logo.x_start + IMAGE_WIDTH
         logo.y_end = logo.y_start + IMAGE_HEIGHT
-        edge_collision(logo)
-        object_collision(num)
         logo.draw(num)
 
     display.update()
