@@ -6,8 +6,10 @@ from machine import Pin
 
 """
 Pimoroni logo bouncing around on the screen
-To display 64x64 image 4 subimages of 32x32pixels must be added to the pico
-Press Y to add sprites to the screen
+Goal: To load and display images on an external HDMI screen
+Please upload the image to the pico 
+Multiple logos can be added to the screen
+Press Y to add logo images to the screen
 """
 
 # set up the display and drawing variables
@@ -37,11 +39,13 @@ has_sprite = False  # set if the sprite file exists in the pico
 
 try:
     # load the sprites
+    # Given that the png image is 64 by 64 pixels it is split to 4 portions of 32 by 32 pixels
+    # This is done by providing a 4 tuple as third argument as (x_offset, y_offset, portion_width, portion_height)
     for _ in range(2):
-        display.load_sprite("pim1.png", LOGOSUB1_INDEX)
-        display.load_sprite("pim2.png", LOGOSUB2_INDEX)
-        display.load_sprite("pim3.png", LOGOSUB3_INDEX)
-        display.load_sprite("pim4.png", LOGOSUB4_INDEX)
+        display.load_sprite("pim-logo.png", LOGOSUB1_INDEX, (0, 0, 32, 32))
+        display.load_sprite("pim-logo.png", LOGOSUB2_INDEX, (32, 0, 32, 32))
+        display.load_sprite("pim-logo.png", LOGOSUB3_INDEX, (0, 32, 32, 32))
+        display.load_sprite("pim-logo.png", LOGOSUB4_INDEX, (32, 32, 32, 32))
         display.update()
 
     has_sprite = True
@@ -182,7 +186,7 @@ def add_logo():
 def draw_background():
     """Draws a gradient background"""
     t = time.ticks_ms() / 1000.0
-    grid_size = 80
+    grid_size = 40
     for y in range(0, HEIGHT // grid_size):
         for x in range(0, WIDTH // grid_size):
             h = x + y + int(t * 5)
@@ -208,6 +212,8 @@ while True:
         last_time = current_time
 
     draw_background()
+    
+    
 
     # display name with offset
     text_width = display.measure_text(NAME, scale=TEXT_SCALE)
