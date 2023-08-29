@@ -41,7 +41,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_line_obj, 5, 6, ModPicoGraph
 
 // Sprites
 MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_load_sprite_obj, 3, ModPicoGraphics_load_sprite);
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_display_sprite_obj, 5, 5, ModPicoGraphics_display_sprite);
+MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_display_sprite_obj, 5, ModPicoGraphics_display_sprite);
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_clear_sprite_obj, ModPicoGraphics_clear_sprite);
 
 // Utility

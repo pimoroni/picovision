@@ -469,10 +469,10 @@ namespace pimoroni {
     ram.wait_for_finish_blocking();
   }
 
-  void DVDisplay::set_sprite(int sprite_num, uint16_t sprite_data_idx, const Point &p, SpriteBlendMode blend_mode)
+  void DVDisplay::set_sprite(int sprite_num, uint16_t sprite_data_idx, const Point &p, SpriteBlendMode blend_mode, int v_scale)
   {
     uint8_t buf[7];
-    buf[0] = (uint8_t)blend_mode;
+    buf[0] = (uint8_t)blend_mode | ((v_scale - 1) << 4);
     buf[1] = sprite_data_idx & 0xff;
     buf[2] = sprite_data_idx >> 8;
     buf[3] = p.x & 0xff;
