@@ -14,26 +14,49 @@ cppmem.set_mode(cppmem.MICROPYTHON)
 display = PicoGraphics(DISPLAY_PICOVISION, width=720, height=480, frame_width=720 * 2, frame_height=480, pen_type=PEN_DV_RGB555)
 png = pngdec.PNG(display)
 
+# Main difficulty settings
+GAME_SPEED = 2.0
+N_SCREENS = 10
+
+# Sprite image indexes
 SPRITE_PIPE = 0
 SPRITE_PIPE_CAP = 1
 SPRITE_BIRB_1 = 2
 SPRITE_BIRB_2 = 3
 SPRITE_BIRB_3 = 4
-BIRBS = [2, 3, 4]
 SPRITE_GOAL = 5
+BIRBS = [SPRITE_BIRB_1, SPRITE_BIRB_2, SPRITE_BIRB_3]
+
+HQ_1 = 6
+HQ_2 = 7
+HQ_3 = 8
+HQ_4 = 9
+HQ = [HQ_1, HQ_2, HQ_3, HQ_4]
+
+# This is the minimum possible height of the pipe sprite
+# it will be vertically scaled in intervals of this value
+# The pipe cap will hide any overshoot.
+SPRITE_PIPE_HEIGHT = 10
 
 for _ in range(2):
-    display.load_sprite("floppy_birb/pipe.png", SPRITE_PIPE)
-    display.load_sprite("floppy_birb/goal.png", SPRITE_GOAL)
-    display.load_sprite("floppy_birb/pipe-cap.png", SPRITE_PIPE_CAP)
-    display.load_sprite("floppy_birb/birb-sprite.png", SPRITE_BIRB_1, (0, 32, 32, 32))
-    display.load_sprite("floppy_birb/birb-sprite.png", SPRITE_BIRB_2, (32, 32, 32, 32))
-    display.load_sprite("floppy_birb/birb-sprite.png", SPRITE_BIRB_3, (64, 32, 32, 32))
+    # Pipes and goals
+    display.load_sprite("pipe.png", SPRITE_PIPE, (0, 0, 20, SPRITE_PIPE_HEIGHT))
+    display.load_sprite("pipe-cap.png", SPRITE_PIPE_CAP)
+    display.load_sprite("goal.png", SPRITE_GOAL)
+    # The individual frames of the birb
+    display.load_sprite("birb-sprite.png", SPRITE_BIRB_1, (0, 32, 32, 32))
+    display.load_sprite("birb-sprite.png", SPRITE_BIRB_2, (32, 32, 32, 32))
+    display.load_sprite("birb-sprite.png", SPRITE_BIRB_3, (64, 32, 32, 32))
+    # The HQ building, needs four sprites to assemble
+    display.load_sprite("pimoroni-hq.png", HQ_1, (0, 0, 32, 17))
+    display.load_sprite("pimoroni-hq.png", HQ_2, (32, 0, 32, 17))
+    display.load_sprite("pimoroni-hq.png", HQ_3, (64, 0, 32, 17))
+    display.load_sprite("pimoroni-hq.png", HQ_4, (96, 0, 32, 17))
     display.update()
 
 vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_X4)
-vector.set_font("floppy_birb/OpenSans-Regular.af", 50)
+vector.set_font("OpenSans-Regular.af", 50)
 
 
 # SKY = display.create_pen(0x74, 0xc6, 0xd4)
@@ -59,11 +82,9 @@ SLICE_WIDTH = int(WIDTH / SLICES)
 OFFSCREEN_SLICES = int(SLICES / 2)
 
 PIPE_WIDTH = 20
-PIPE_SPRITE_HEIGHT = 14
 CAP_WIDTH = 26
 CAP_HEIGHT = 15
 
-N_SCREENS = 2
 LEVEL_SIZE = N_SCREENS * SLICES
 
 GAME_TOP = int((HEIGHT - GAME_HEIGHT) / 2)
@@ -94,7 +115,7 @@ for _ in range(2):
     display.set_scroll_index_for_lines(1, GAME_TOP - 20, GAME_TOP)
     display.set_scroll_index_for_lines(1, GAME_BOTTOM, GAME_BOTTOM + 20)
 
-    display.set_scroll_index_for_lines(3, GAME_BOTTOM - CLOUD_HEIGHT, GAME_BOTTOM)
+    display.set_scroll_index_for_lines(3, GAME_TOP, GAME_BOTTOM)
     display.update()
 
 
@@ -107,8 +128,8 @@ def new_level():
         GAP_WIDTH = min(190, GAP_WIDTH)
         GAP_WIDTHS[n] = GAP_WIDTH
 
-        GAP_ZONE_START = PIPE_SPRITE_HEIGHT + CAP_HEIGHT + int(GAP_WIDTH / 2)
-        GAP_ZONE_END = GAME_HEIGHT - PIPE_SPRITE_HEIGHT - CAP_HEIGHT - int(GAP_WIDTH / 2)
+        GAP_ZONE_START = 50 + CAP_HEIGHT + int(GAP_WIDTH / 2)
+        GAP_ZONE_END = GAME_HEIGHT - 50 - CAP_HEIGHT - int(GAP_WIDTH / 2)
         GAP_ZONE_HEIGHT = GAP_ZONE_END - GAP_ZONE_START
 
         if n & 1:
@@ -141,19 +162,8 @@ def draw_info(text):
     display.set_clip(0, 0, WIDTH, HEIGHT)
 
 
-def outline(x, y, w, h):
-    w -= 1
-
-    display.line(x, y, x + w, y)
-    display.line(x, y + h, x + w, y + h)
-
-    display.line(x, y, x, y + h)
-    display.line(x + w, y, x + w, y + h)
-
-
 def prep_game():
     # Prep the backdrop
-    png.open_file("floppy_birb/pimoroni-hq.png")
     for display_index in range(2):
         display.set_pen(GROUND)
         display.clear()
@@ -177,11 +187,15 @@ def prep_game():
         display.set_pen(SKY)
         display.rectangle(0, GAME_TOP, WIDTH, GAME_HEIGHT - CLOUD_HEIGHT)
 
-        # The grass, cloud art will overlap this
+        png.open_file("sky.png")
+        png.decode(0, GAME_TOP)
+
         display.set_pen(GRASS)
         display.rectangle(0, GAME_BOTTOM - CLOUD_HEIGHT, WIDTH, CLOUD_HEIGHT)
 
+        png.open_file("ground.png")
         png.decode(0, GAME_BOTTOM - CLOUD_HEIGHT)
+        png.decode(GAME_WIDTH, GAME_BOTTOM - CLOUD_HEIGHT)
 
         display.set_clip(0, 0, WIDTH, HEIGHT)
 
@@ -209,7 +223,7 @@ class SpriteList:
     def __init__(self):
         self.items = []
 
-    def add(self, image, x, y, force=False, v_scale=1):
+    def add(self, image, x, y, v_scale=1, force=False):
         if len(self.items) == 32:
             if force:
                 self.items.pop(0)
@@ -316,8 +330,8 @@ def score_point(offset=None):
 def main_game_running(t_current):
     global end_index
 
-    current_x = int(t_current / 20.0)
-    cloud_x = int(t_current / 400.0)
+    current_x = int(t_current / (20.0 / GAME_SPEED))
+    cloud_x = int(t_current / (100.0 / GAME_SPEED))
 
     birb.update()
 
@@ -327,6 +341,13 @@ def main_game_running(t_current):
     display.set_display_offset(cloud_x % GAME_WIDTH, 0, 3)
 
     spritelist.clear()
+
+    hq_yoffset = GAME_BOTTOM - CLOUD_HEIGHT + 30
+    hq_xoffset = WIDTH - (cloud_x % WIDTH) - 256
+
+    for hq, spr in enumerate(HQ):
+        if hq_xoffset < GAME_WIDTH and hq_xoffset > -(hq*32) - 32:
+            spritelist.add(spr, hq_xoffset + (hq * 32), hq_yoffset)
 
     for pipe in range(0, int(SLICES / 2) + 1):
         try:
@@ -350,13 +371,16 @@ def main_game_running(t_current):
         if pipe_x <= -CAP_WIDTH or pipe_x >= GAME_WIDTH:
             continue
 
-        # Top pipe and cap
-        spritelist.add(SPRITE_PIPE, pipe_x, GAME_TOP, v_scale=(top_pipe_height // PIPE_SPRITE_HEIGHT))
+        v_scale = min(top_pipe_height // SPRITE_PIPE_HEIGHT, 32)
+        spritelist.add(SPRITE_PIPE, pipe_x, GAME_TOP, v_scale=v_scale)
+
+        # Top pipe cap
         spritelist.add(SPRITE_PIPE_CAP, pipe_x - 3, top_pipe_end - CAP_HEIGHT)
 
-        # Bottom pipe and cap
-        bottom_pipe_scale = bottom_pipe_height // PIPE_SPRITE_HEIGHT
-        spritelist.add(SPRITE_PIPE, pipe_x, GAME_BOTTOM - PIPE_SPRITE_HEIGHT * bottom_pipe_scale, v_scale=bottom_pipe_scale)
+        v_scale = min(bottom_pipe_height // SPRITE_PIPE_HEIGHT, 32)
+        spritelist.add(SPRITE_PIPE, pipe_x, GAME_BOTTOM - v_scale * SPRITE_PIPE_HEIGHT, v_scale=v_scale)
+
+        # Bottom pipe cap
         spritelist.add(SPRITE_PIPE_CAP, pipe_x - 3, bottom_pipe_start)
 
         if end_index == level_offset + pipe:
@@ -367,8 +391,9 @@ def main_game_running(t_current):
 
             collisionlist.add((int(goal_x), int(goal_y), 32, 32), game_win)
 
-        top_pipe_bounds = (pipe_x, GAME_TOP, PIPE_WIDTH, top_pipe_height)
-        bottom_pipe_bounds = (pipe_x, bottom_pipe_start, PIPE_WIDTH, bottom_pipe_height)
+        # Remove int(CAP_HEIGHT / 2) from the size of the fail zones to be a little more forgiving
+        top_pipe_bounds = (pipe_x, GAME_TOP, PIPE_WIDTH, top_pipe_height - int(CAP_HEIGHT / 2))
+        bottom_pipe_bounds = (pipe_x, bottom_pipe_start + int(CAP_HEIGHT / 2), PIPE_WIDTH, bottom_pipe_height - int(CAP_HEIGHT / 2))
         score_zone = (pipe_x + PIPE_WIDTH, top_pipe_end, 1, gap_width)
 
         collisionlist.add(top_pipe_bounds, game_over)
@@ -376,6 +401,7 @@ def main_game_running(t_current):
         collisionlist.add(score_zone, score_point, offset=level_offset + pipe)
 
     spritelist.add(BIRBS[int(current_x / 10) % 3], int(birb.x), int(birb.y), force=True)
+
     spritelist.display()
 
     # collisionlist.debug(current_x % GAME_WIDTH)
