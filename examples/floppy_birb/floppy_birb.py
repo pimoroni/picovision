@@ -23,17 +23,17 @@ BIRBS = [2, 3, 4]
 SPRITE_GOAL = 5
 
 for _ in range(2):
-    display.load_sprite("pipe.png", SPRITE_PIPE)
-    display.load_sprite("goal.png", SPRITE_GOAL)
-    display.load_sprite("pipe-cap.png", SPRITE_PIPE_CAP)
-    display.load_sprite("birb-sprite.png", SPRITE_BIRB_1, (0, 32, 32, 32))
-    display.load_sprite("birb-sprite.png", SPRITE_BIRB_2, (32, 32, 32, 32))
-    display.load_sprite("birb-sprite.png", SPRITE_BIRB_3, (64, 32, 32, 32))
+    display.load_sprite("floppy_birb/pipe.png", SPRITE_PIPE)
+    display.load_sprite("floppy_birb/goal.png", SPRITE_GOAL)
+    display.load_sprite("floppy_birb/pipe-cap.png", SPRITE_PIPE_CAP)
+    display.load_sprite("floppy_birb/birb-sprite.png", SPRITE_BIRB_1, (0, 32, 32, 32))
+    display.load_sprite("floppy_birb/birb-sprite.png", SPRITE_BIRB_2, (32, 32, 32, 32))
+    display.load_sprite("floppy_birb/birb-sprite.png", SPRITE_BIRB_3, (64, 32, 32, 32))
     display.update()
 
 vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_X4)
-vector.set_font("OpenSans-Regular.af", 50)
+vector.set_font("floppy_birb/OpenSans-Regular.af", 50)
 
 
 # SKY = display.create_pen(0x74, 0xc6, 0xd4)
@@ -59,6 +59,7 @@ SLICE_WIDTH = int(WIDTH / SLICES)
 OFFSCREEN_SLICES = int(SLICES / 2)
 
 PIPE_WIDTH = 20
+PIPE_SPRITE_HEIGHT = 14
 CAP_WIDTH = 26
 CAP_HEIGHT = 15
 
@@ -106,8 +107,8 @@ def new_level():
         GAP_WIDTH = min(190, GAP_WIDTH)
         GAP_WIDTHS[n] = GAP_WIDTH
 
-        GAP_ZONE_START = 50 + CAP_HEIGHT + int(GAP_WIDTH / 2)
-        GAP_ZONE_END = GAME_HEIGHT - 50 - CAP_HEIGHT - int(GAP_WIDTH / 2)
+        GAP_ZONE_START = PIPE_SPRITE_HEIGHT + CAP_HEIGHT + int(GAP_WIDTH / 2)
+        GAP_ZONE_END = GAME_HEIGHT - PIPE_SPRITE_HEIGHT - CAP_HEIGHT - int(GAP_WIDTH / 2)
         GAP_ZONE_HEIGHT = GAP_ZONE_END - GAP_ZONE_START
 
         if n & 1:
@@ -152,7 +153,7 @@ def outline(x, y, w, h):
 
 def prep_game():
     # Prep the backdrop
-    png.open_file("pimoroni-hq.png")
+    png.open_file("floppy_birb/pimoroni-hq.png")
     for display_index in range(2):
         display.set_pen(GROUND)
         display.clear()
@@ -208,13 +209,13 @@ class SpriteList:
     def __init__(self):
         self.items = []
 
-    def add(self, image, x, y, force=False):
+    def add(self, image, x, y, force=False, v_scale=1):
         if len(self.items) == 32:
             if force:
                 self.items.pop(0)
             else:
                 return
-        self.items.append((image, x, y))
+        self.items.append((image, x, y, v_scale))
 
     def clear(self):
         self.items = []
@@ -222,8 +223,8 @@ class SpriteList:
     def display(self):
         for i in range(32):
             try:
-                image, x, y = self.items[i]
-                display.display_sprite(i, image, x, y)
+                image, x, y, v_scale = self.items[i]
+                display.display_sprite(i, image, x, y, v_scale=v_scale)
             except IndexError:
                 display.clear_sprite(i)
 
@@ -349,24 +350,13 @@ def main_game_running(t_current):
         if pipe_x <= -CAP_WIDTH or pipe_x >= GAME_WIDTH:
             continue
 
-        spritelist.add(SPRITE_PIPE, pipe_x, GAME_TOP)
-
-        # Ugly hack to fill in the pipes with 50px tall sprites
-        # because we don't have vscaling yet
-        for n in (50, 100, 150):
-            if top_pipe_height - CAP_HEIGHT > n:
-                spritelist.add(SPRITE_PIPE, pipe_x, GAME_TOP + top_pipe_height - n - CAP_HEIGHT)
-
-        # Top pipe cap
+        # Top pipe and cap
+        spritelist.add(SPRITE_PIPE, pipe_x, GAME_TOP, v_scale=(top_pipe_height // PIPE_SPRITE_HEIGHT))
         spritelist.add(SPRITE_PIPE_CAP, pipe_x - 3, top_pipe_end - CAP_HEIGHT)
 
-        spritelist.add(SPRITE_PIPE, pipe_x, bottom_pipe_start + CAP_HEIGHT)
-
-        for n in (50, 100, 150):
-            if bottom_pipe_height - CAP_HEIGHT > n:
-                spritelist.add(SPRITE_PIPE, pipe_x, GAME_BOTTOM - n)
-
-        # Bottom pipe cap
+        # Bottom pipe and cap
+        bottom_pipe_scale = bottom_pipe_height // PIPE_SPRITE_HEIGHT
+        spritelist.add(SPRITE_PIPE, pipe_x, GAME_BOTTOM - PIPE_SPRITE_HEIGHT * bottom_pipe_scale, v_scale=bottom_pipe_scale)
         spritelist.add(SPRITE_PIPE_CAP, pipe_x - 3, bottom_pipe_start)
 
         if end_index == level_offset + pipe:

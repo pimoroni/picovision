@@ -341,12 +341,27 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
     return result == 0 ? mp_const_true : mp_const_false;
 }
 
-mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *args) {
-    enum { ARG_self, ARG_slot, ARG_sprite_index, ARG_x, ARG_y };
+mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_slot, ARG_sprite_index, ARG_x, ARG_y, ARG_blend_mode, ARG_v_scale };
 
-    dv_display.set_sprite(mp_obj_get_int(args[ARG_slot]), 
-                          mp_obj_get_int(args[ARG_sprite_index]),
-                          {mp_obj_get_int(args[ARG_x]), mp_obj_get_int(args[ARG_y])});
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_slot, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_sprite_index, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_x, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_blend_mode, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_v_scale, MP_ARG_INT, {.u_int = 1} }
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    dv_display.set_sprite(args[ARG_slot].u_int, 
+                          args[ARG_sprite_index].u_int,
+                          {args[ARG_x].u_int, args[ARG_y].u_int},
+                          (DVDisplay::SpriteBlendMode)args[ARG_blend_mode].u_int,
+                          args[ARG_v_scale].u_int);
 
     return mp_const_true;
 }
