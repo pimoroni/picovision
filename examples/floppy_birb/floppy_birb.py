@@ -17,6 +17,10 @@ png = pngdec.PNG(display)
 # Main difficulty settings
 GAME_SPEED = 2.0
 N_SCREENS = 10
+PIPES_PER_SCREEN = 4
+
+# Input pin
+PIN_BUTTON = 9
 
 # Sprite image indexes
 SPRITE_PIPE = 0
@@ -77,7 +81,7 @@ GAME_WIDTH = int(WIDTH / 2)
 GAME_HEIGHT = int(HEIGHT / 3) * 2
 CLOUD_HEIGHT = 100
 
-SLICES = 10
+SLICES = PIPES_PER_SCREEN * 2
 SLICE_WIDTH = int(WIDTH / SLICES)
 OFFSCREEN_SLICES = int(SLICES / 2)
 
@@ -85,7 +89,7 @@ PIPE_WIDTH = 20
 CAP_WIDTH = 26
 CAP_HEIGHT = 15
 
-LEVEL_SIZE = N_SCREENS * SLICES
+LEVEL_SIZE = N_SCREENS * PIPES_PER_SCREEN
 
 GAME_TOP = int((HEIGHT - GAME_HEIGHT) / 2)
 GAME_BOTTOM = GAME_TOP + GAME_HEIGHT
@@ -97,7 +101,7 @@ GAME_LOSE = 3
 
 COUNTDOWN_TIME_MS = 3000  # ms
 
-# Gap Y positions for 128 slices
+# Gap Y positions, widths and scoring for each pipe
 PIPE_GAPS = [0 for _ in range(LEVEL_SIZE)]
 GAP_WIDTHS = [0 for _ in range(LEVEL_SIZE)]
 SCORE = [False for _ in range(LEVEL_SIZE)]
@@ -115,10 +119,13 @@ for _ in range(2):
     display.set_scroll_index_for_lines(1, GAME_TOP - 20, GAME_TOP)
     display.set_scroll_index_for_lines(1, GAME_BOTTOM, GAME_BOTTOM + 20)
 
+    # For scrolling the sky/ground behind the pipes
     display.set_scroll_index_for_lines(3, GAME_TOP, GAME_BOTTOM)
+
     display.update()
 
 
+# Generate the level data
 def new_level():
     for n in range(LEVEL_SIZE):
         MAX_VARIANCE = 110
@@ -144,15 +151,6 @@ def new_level():
             )
 
 
-def draw_score():
-    display.set_clip(0, 0, WIDTH, GAME_TOP - 20)
-    display.set_pen(GROUND)
-    display.rectangle(0, 0, GAME_WIDTH, GAME_TOP - 20)
-    display.set_pen(PIPE_SHADOW)
-    vector.text(f"Score: {sum(SCORE)}", 15, -5)
-    display.set_clip(0, 0, WIDTH, HEIGHT)
-
-
 def draw_info(text):
     display.set_clip(0, 0, WIDTH, GAME_TOP - 20)
     display.set_pen(GROUND)
@@ -160,6 +158,10 @@ def draw_info(text):
     display.set_pen(PIPE_SHADOW)
     vector.text(text, 15, -5)
     display.set_clip(0, 0, WIDTH, HEIGHT)
+
+
+def draw_score():
+    draw_info(f"Score: {sum(SCORE)}")
 
 
 def prep_game():
@@ -346,7 +348,7 @@ def main_game_running(t_current):
     hq_xoffset = WIDTH - (cloud_x % WIDTH) - 256
 
     for hq, spr in enumerate(HQ):
-        if hq_xoffset < GAME_WIDTH and hq_xoffset > -(hq*32) - 32:
+        if hq_xoffset < GAME_WIDTH and hq_xoffset > -(hq * 32) - 32:
             spritelist.add(spr, hq_xoffset + (hq * 32), hq_yoffset)
 
     for pipe in range(0, int(SLICES / 2) + 1):
@@ -404,7 +406,7 @@ def main_game_running(t_current):
 
     spritelist.display()
 
-    # collisionlist.debug(current_x % GAME_WIDTH)
+    # Check our list of collision bounds against the birb and trigger any actions
     collisionlist.test(*birb.bounds())
     collisionlist.clear()
 
@@ -465,7 +467,7 @@ def main_game_getready(t_current):
         reset_game()
 
 
-birb = Birb(9)
+birb = Birb(PIN_BUTTON)
 spritelist = SpriteList()
 collisionlist = CollisionList()
 end_index = None
