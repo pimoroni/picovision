@@ -1,15 +1,7 @@
 import time
-import math
-import random
-import machine
-import gc
-import cppmem
 import pngdec
 from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555
-from picovector import PicoVector, Polygon, ANTIALIAS_X4
 
-
-cppmem.set_mode(cppmem.MICROPYTHON)
 
 DISPLAY_WIDTH = 320
 DISPLAY_HEIGHT = 240
@@ -32,18 +24,25 @@ png = pngdec.PNG(display)
 
 level_data = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1],
+    [0, 0, 1, 2, 2, 2, 2, 2, 5, 2, 2, 2, 2, 2, 2, 2, 5, 2, 3, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0],
+    [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 2, 2, 2, 2, 5, 3, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 5, 2, 5, 2, 2, 3, 0, 0, 0, 4, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0, 4, 0, 0],
+    [0, 0, 0, 0, 1, 5, 2, 2, 3, 0, 4, 0, 1, 2, 2, 3, 0, 4, 0, 0],
+    [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 4, 0, 0],
+    [0, 1, 2, 5, 2, 3, 0, 0, 1, 2, 2, 2, 5, 3, 0, 1, 5, 2, 2, 2],
+    [0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0],
+    [2, 2, 2, 2, 2, 3, 0, 0, 1, 2, 2, 2, 2, 3, 0, 1, 2, 2, 2, 2],
 ]
+
+# Crush the 2d list above into a simple bytearray
+level_data_bytes = b""
+
+for row in level_data:
+    # Add 5 to each index, to move us past the fire tiles to the platforms
+    level_data_bytes += bytes([n + 5 if n > 0 else n for n in row])
 
 
 class SpriteData:
@@ -52,13 +51,13 @@ class SpriteData:
     def __init__(self):
         self.files = [None for _ in range(self.MAX_SPRITE_DATA_SLOTS)]
         self.crops = [None for _ in range(self.MAX_SPRITE_DATA_SLOTS)]
-        
+
     def add(self, filename, crop):
         slot = self.files.index(None)
         self.files[slot] = filename
         self.crops[slot] = crop
         return slot
-        
+
     def load(self):
         # Load sprites into each PSRAM buffer
         for _ in range(2):
@@ -137,13 +136,10 @@ class CollisionList:
             display.update()
 
 
+# Load the snake sprite data into the PSRAM
 spritedata = SpriteData()
-
-FIRE = spritedata.split("fire.png", (0, 0, 16, 80), (16, 16))
-
 SNEK_A = spritedata.split("snek.png", (0, 0, 16, 80), (16, 16))
 SNEK_B = spritedata.split("snek.png", (16, 0, 16, 80), (16, 16))
-
 spritedata.load()
 
 spritelist = SpriteList()
@@ -162,46 +158,30 @@ for _ in range(2):
 NUM_FRAMES = 5
 
 # This sequence is repeated horizontally
-start_frame = [0, 2, 1, 4, 3]
+fire_tilemap = [0, 2, 1, 4, 3]
 
-print("Drawing Level")
+# Repeat the frame sequence, adding one to each frame and wrappong on NUM_FRAMES
+for x in range(NUM_FRAMES + 4):
+    next_step = [(n + 1) % NUM_FRAMES for n in fire_tilemap[-NUM_FRAMES:]]
+    fire_tilemap += next_step
 
-png_data = open("fire.png", "rb").read()
-png.open_RAM(png_data)
+# Add 1 to each tile, since tiles are indexed 1-16 with 0 being no tile
+fire_tilemap_bytes = bytes([n + 1 for n in fire_tilemap])
 
+t_start = time.ticks_ms()
+# Load our 64x64, 16 tile sheet
+tiles = display.load_sprite("tiles.png")
 for _ in range(2):
+    # Clear to background colour
     display.set_pen(display.create_pen(0x3b, 0x32, 0x1d))
     display.clear()
-    display.set_pen(display.create_pen(255, 255, 255))
-    o_r = 0
-    for f in range(NUM_FRAMES + 4):  # A little bit of right padding to repeat the pattern
-        for r in range(NUM_FRAMES):
-            frame = (start_frame[r % NUM_FRAMES] + f) % NUM_FRAMES
-            png.decode(o_r, DISPLAY_HEIGHT - SPRITE_H, source=(0, frame * SPRITE_H, SPRITE_W, SPRITE_H))
-            #display.text(f"{frame}", o_r, DISPLAY_HEIGHT - 32)
-            o_r += SPRITE_W
+
+    # Draw the level data
+    display.tilemap(level_data_bytes, (0, 32, 20, 12), tiles)
+    display.tilemap(fire_tilemap_bytes, (0, DISPLAY_HEIGHT - 16, len(fire_tilemap), 1), tiles)
     display.update()
-
-png_data = open("platform.png", "rb").read()
-png.open_RAM(png_data)
-
-for _ in range(2):
-    for y in range(TILES_Y):
-        ry = (y + 2) * TILE_H
-        for x in range(TILES_X):
-            rx = x * TILE_W
-            if level_data[y][x]:
-                #display.rectangle(rx, ry, TILE_W, int(TILE_H / 4))
-                tile_type = 1  # middle platform section
-                if x > 0 and level_data[y][x - 1] == 0:
-                    tile_type = 0  # left platform section
-                elif x < TILES_X - 1 and level_data[y][x + 1] == 0:
-                    tile_type = 2  # Right platform section
-
-                png.decode(rx, ry, source=(tile_type * TILE_W, 0, TILE_W, TILE_H))
-
-    display.update()
-print("Done")
+t_end = time.ticks_ms()
+print(f"{t_end - t_start}ms")
 
 
 while True:
