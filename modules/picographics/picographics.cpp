@@ -68,6 +68,8 @@ MICROPY_EVENT_POLL_HOOK
     uint8_t *sprite_data = (uint8_t *)target->target;
     sprite_data += (pDraw->y - target->source.y) * target->source.w;
 
+    //mp_printf(&mp_plat_print, "Decoding scanline at %d, %dbpp, type: %d, width: %d pitch: %d alpha: %d\n", pDraw->y, pDraw->iBpp, pDraw->iPixelType, pDraw->iWidth, pDraw->iPitch, pDraw->iHasAlpha);
+
     uint8_t *pixel = (uint8_t *)pDraw->pPixels;
     if (pDraw->iPixelType == PNG_PIXEL_INDEXED) {
         for(int x = 0; x < pDraw->iWidth; x++) {
@@ -87,9 +89,9 @@ MICROPY_EVENT_POLL_HOOK
             }
             if(x < target->source.x || x >= target->source.x + target->source.w) continue;
 
-            uint8_t a = pDraw->iHasAlpha ? (pDraw->pPalette[768 + i] & 0b11100000) : 0b11100000;
+            uint8_t a = (pDraw->iHasAlpha && pDraw->pPalette[768 + i] > 0) ? 0x01 : 0x00;
 
-            *sprite_data++ = (i & 0x1f) | a;
+            *sprite_data++ = ((i & 0x1f) << 2) | a;
         }
     }
 }
@@ -271,7 +273,7 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
 
     int index = args[ARG_index].u_int;
 
-    bool palette_lookups = (self->graphics->pen_type != PicoGraphics::PEN_DV_P5) || index > -1;
+    bool palette_lookups = self->graphics->pen_type != PicoGraphics::PEN_DV_P5;
 
     // Try loading the file/stream and checking if it's a PNG graphic
     // if it's *not* a PNG then assume it's a raw PicoVision sprite.
@@ -330,7 +332,7 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
             pngdec_close_callback,
             pngdec_read_callback,
             pngdec_seek_callback,
-            PNGDrawSprite);
+            palette_lookups ? PNGDrawSprite : PNGDrawSprite_Indexed);
 
     // Source is a buffer
     } else {
@@ -464,9 +466,9 @@ mp_obj_t ModPicoGraphics_tilemap(size_t n_args, const mp_obj_t *pos_args, mp_map
 
                 uint8_t tile_pixel = pixel_data[tilesheet_index];
 
-                if((tile_pixel & 0xe0) == 0) continue;
+                if((tile_pixel & 0x01) == 0) continue;
 
-                self->graphics->set_pen(tile_pixel & 0x1f);
+                self->graphics->set_pen((tile_pixel >> 2) & 0x1f);
 
                 self->graphics->pixel({
                     origin_x + x,
