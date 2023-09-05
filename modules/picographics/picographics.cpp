@@ -390,7 +390,11 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
         result = mp_obj_new_tuple(3, tuple);
     } else {
         if (status == 0) {
-            self->display->define_sprite(args[ARG_index].u_int, width, height, (uint16_t *)(decode_target->target));
+            if(bytes_per_pixel == 1) {
+                self->display->define_palette_sprite(args[ARG_index].u_int, width, height, (uint8_t *)(decode_target->target));
+            } else {
+                self->display->define_sprite(args[ARG_index].u_int, width, height, (uint16_t *)(decode_target->target));
+            }
         }
         result = status == 0 ? mp_const_true : mp_const_false;
     }
@@ -400,6 +404,92 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
     m_free(png);
 
     return result;
+}
+
+mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_slot, ARG_data, ARG_frame_size };
+
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_slot, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_data, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_frame_size, MP_ARG_REQUIRED | MP_ARG_OBJ }
+    };
+
+    mp_buffer_info_t animation_data;
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, ModPicoGraphics_obj_t);
+
+    int slot = args[ARG_slot].u_int;
+
+    // Frame size
+    mp_obj_tuple_t *tuple_frame_size = MP_OBJ_TO_PTR2(args[ARG_frame_size].u_obj, mp_obj_tuple_t);
+
+    if(tuple_frame_size->len != 2) mp_raise_ValueError("load_animation: frame_size tuple must contain (w, h)");
+
+    int frame_w = mp_obj_get_int(tuple_frame_size->items[0]);
+    int frame_h = mp_obj_get_int(tuple_frame_size->items[1]);
+
+    // Animation data
+    mp_obj_tuple_t *tuple_frame_data = MP_OBJ_TO_PTR2(args[ARG_data].u_obj, mp_obj_tuple_t);
+
+    if(tuple_frame_data->len != 3) mp_raise_ValueError("load_animation: data tuple must contain (w, h, data)");
+
+    int tilesheet_w = mp_obj_get_int(tuple_frame_data->items[0]);
+    int tilesheet_h = mp_obj_get_int(tuple_frame_data->items[1]);
+    mp_get_buffer_raise(tuple_frame_data->items[2], &animation_data, MP_BUFFER_READ);
+
+    int frames_x = tilesheet_w / frame_w;
+    int frames_y = tilesheet_h / frame_h;
+
+    if(self->graphics->pen_type == PicoGraphics::PEN_DV_P5) {
+
+        uint8_t *buf = m_new(uint8_t, frame_w * frame_h);
+
+        for(auto y = 0; y < frames_y; y++) {
+            int o_y = y * frame_h * tilesheet_w;
+            for(auto x = 0; x < frames_x; x++) {
+                int o_x = x * frame_w;
+                uint8_t *p = buf;
+                uint8_t *data = (uint8_t *)animation_data.buf; // Src
+                data += o_x + o_y;
+                for(auto fy = 0; fy < frame_h; fy++) {
+                    for(auto fx = 0; fx < frame_w; fx++) {
+                        *p++ = *data++;
+                    }
+                    // Advance to the next row
+                    data += tilesheet_w - frame_w;
+                }
+                self->display->define_palette_sprite(slot++, frame_w, frame_h, buf);
+            }
+        }
+
+    } else {
+
+        uint16_t *buf = m_new(uint16_t, frame_w * frame_h);
+
+        for(auto y = 0; y < frames_y; y++) {
+            int o_y = y * frame_h * tilesheet_w;
+            for(auto x = 0; x < frames_x; x++) {
+                int o_x = x * frame_w;
+                uint16_t *p = buf;
+                uint16_t *data = (uint16_t *)animation_data.buf;
+                data += o_x + o_y;
+                for(auto fy = 0; fy < frame_h; fy++) {
+                    for(auto fx = 0; fx < frame_w; fx++) {
+                        *p++ = *data++;
+                    }
+                    data += tilesheet_w - frame_w;
+                }
+                self->display->define_sprite(slot++, frame_w, frame_h, buf);
+            }
+        }
+    }
+
+    return mp_obj_new_int(slot);
 }
 
 mp_obj_t ModPicoGraphics_tilemap(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
