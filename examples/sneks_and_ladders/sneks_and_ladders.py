@@ -2,11 +2,12 @@ import time
 import pngdec
 from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_P5 as PEN
 
+t_start = time.ticks_ms()
 
 DISPLAY_WIDTH = 320
 DISPLAY_HEIGHT = 240
 
-FRAME_SCALE_X = 4
+FRAME_SCALE_X = 2
 FRAME_SCALE_Y = 1
 
 TILE_W = 16
@@ -128,19 +129,20 @@ class SpriteData:
 
 
 class TileData:
-    def __init__(self, filename, source=None, cache=True):
+    def __init__(self, filename, source=None, cache=None):
         self._filename = filename
-        self._cache = filename[:-3] + "bin"
+        self._cache = cache
+        try:
+            x, y, w, h = source
+        except ValueError:
+            raise RuntimeError("TileData requires a source region.")
         try:
             self._data = open(self._cache, "rb").read()
-            self._width = 64
-            self._height = 64
+            self._width = w
+            self._height = h
         except OSError:
-            if source:
-                self._width, self._height, self._data = display.load_sprite(filename, source=source)
-            else:
-                self._width, self._height, self._data = display.load_sprite(filename)
-            if cache:
+            self._width, self._height, self._data = display.load_sprite(filename, source=source)
+            if cache is not None:
                 open(self._cache, "wb").write(self._data)
 
     def purge(self):
@@ -200,14 +202,13 @@ class CollisionList:
 
 
 # Load the snake sprite data into the PSRAM
-spritedata = SpriteData()
-SNEK_A = spritedata.split("tiles.png", (0, 64, 16, 80), (16, 16))
-SNEK_B = spritedata.split("tiles.png", (16, 64, 16, 80), (16, 16))
+snek_data = TileData("tiles.png", cache="snek_data.bin", source=(0, 64, 32, 80))
+start_frame = 0
+end_frame = display.load_animation(start_frame, snek_data.data(), (16, 16))
 
-t_start = time.ticks_ms()
-spritedata.load()
-t_end = time.ticks_ms()
-print(f"{t_end - t_start}ms")
+SNEK_A = list(range(start_frame, end_frame))[0::2]
+SNEK_B = list(range(start_frame, end_frame))[1::2]
+
 
 spritelist = SpriteList()
 
@@ -236,7 +237,7 @@ for x in range(NUM_FRAMES + 4):
 fire_tilemap_bytes = bytes([n + 1 for n in fire_tilemap])
 
 # Load our 64x64, 16 tile sheet
-tiles = TileData("tiles.png", source=(0, 0, 64, 64))
+tiles = TileData("tiles.png", cache="tiles.bin", source=(0, 0, 64, 64))
 
 # Clear to background colour
 display.set_pen(BG)
@@ -249,6 +250,10 @@ display.rectangle(0, DISPLAY_HEIGHT - 16, len(fire_tilemap) * 16, 16)
 display.tilemap(level_data_bytes, (0, 32, 20, 12), tiles.data())
 display.tilemap(fire_tilemap_bytes, (0, DISPLAY_HEIGHT - 16, len(fire_tilemap), 1), tiles.data())
 display.update()
+
+
+t_end = time.ticks_ms()
+print(f"Startup time: {t_end - t_start}ms")
 
 
 while True:
