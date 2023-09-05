@@ -34,9 +34,17 @@ PUBLIC do_write:
   jmp y--, do_write side 0b10
   set pindirs, 0    side 0b00
   out null, 32      side 0b01
-PUBLIC do_clear:
-  mov isr, null     side 0b01
   jmp top           side 0b01
+
+; Special command to read one byte
+PUBLIC do_read_one:
+; Wait for 8.5 clocks (6 + 2.5 for latencies)
+  set x, 6          side 0b00
+rwt_lp2:
+  set pindirs, 0    side 0b10
+  jmp x-- rwt_lp2   side 0b00
+  set x, 1          side 0b10
+  jmp rd_rem        side 0b01 [1]
 
 ; Read command
 PUBLIC do_read:
@@ -78,9 +86,17 @@ PUBLIC do_write:
   jmp y--, do_write side 0b10
   set pindirs, 0    side 0b00
   out null, 32      side 0b01
-PUBLIC do_clear:
-  mov isr, null     side 0b01
   jmp top           side 0b01
+
+; Special command to read one byte
+PUBLIC do_read_one:
+; Wait for 8 clocks (6 + 2 for latencies)
+  set x, 6          side 0b00
+rwt_lp2:
+  set pindirs, 0    side 0b10
+  jmp x-- rwt_lp2   side 0b00
+  set x, 1          side 0b10
+  jmp rd_rem        side 0b01
 
 ; Read command
 PUBLIC do_read:
@@ -125,9 +141,17 @@ PUBLIC do_write:
   jmp y--, do_write [1] side 0b10
   set pindirs, 0        side 0b00
   out null, 32          side 0b01
-PUBLIC do_clear:
-  mov isr, null         side 0b01
   jmp top               side 0b01
+
+; Special command to read one byte
+PUBLIC do_read_one:
+; Wait for 8 clocks (6 + 2 for latencies)
+  set x, 6          side 0b00
+rwt_lp2:
+  set pindirs, 0    side 0b10
+  jmp x-- rwt_lp2   side 0b00
+  set x, 1          side 0b10
+  jmp rd_rem        side 0b01
 
 ; Read command
 PUBLIC do_read:
@@ -150,6 +174,7 @@ rd_rem:
   in pins, 4       [1]  side 0b01
   jmp x--, rd_rem       side 0b01
 .wrap
+
 
 ; Write only program that writes a short (<32 bit) command, 
 ; ignoring the rest of the 32 bit input word.

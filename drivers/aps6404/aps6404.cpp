@@ -263,18 +263,18 @@ namespace pimoroni {
     uint32_t* APS6404::add_read_to_cmd_buffer(uint32_t* cmd_buf, uint32_t addr, uint32_t len_in_words) {
         int32_t len_remaining = len_in_words << 2;
         uint32_t len = std::min((PAGE_SIZE - (addr & (PAGE_SIZE - 1))), (uint32_t)len_remaining);
-        bool clear_isr = false;
 
         while (true) {
             if (len < 2) {
-                // This is guaranteed to leave at least one byte in the ISR, 
-                // which we then clear with an additional command
-                len = 2;
-                clear_isr = true;
+                *cmd_buf++ = 0;
+                *cmd_buf++ = 0xeb000000u | addr;
+                *cmd_buf++ = pio_offset + sram_offset_do_read_one;
             }
-            *cmd_buf++ = (len * 2) - 4;
-            *cmd_buf++ = 0xeb000000u | addr;
-            *cmd_buf++ = pio_offset + sram_offset_do_read;
+            else {
+                *cmd_buf++ = (len * 2) - 4;
+                *cmd_buf++ = 0xeb000000u | addr;
+                *cmd_buf++ = pio_offset + sram_offset_do_read;
+            }
             len_remaining -= len;
             addr += len;
 
@@ -282,12 +282,6 @@ namespace pimoroni {
 
             len = len_remaining;
             if (len > PAGE_SIZE) len = PAGE_SIZE;
-        }
-
-        if (clear_isr) {
-            *cmd_buf++ = 0;
-            *cmd_buf++ = 0xeb000000u | addr;
-            *cmd_buf++ = pio_offset + sram_offset_do_clear;
         }
 
         return cmd_buf;
