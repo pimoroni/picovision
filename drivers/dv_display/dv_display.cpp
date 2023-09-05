@@ -429,7 +429,7 @@ namespace pimoroni {
     write_sprite_table();
   }
 
-  void DVDisplay::define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data)
+  void DVDisplay::define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data, uint32_t bytes_per_pixel)
   {
     uint32_t buf[33];
     uint16_t* buf_ptr = (uint16_t*)buf;
@@ -447,18 +447,18 @@ namespace pimoroni {
     addr += len;
     if (len & 2) addr += 2;
 
-    ram.write(addr, (uint32_t*)data, width * height * 2);
+    ram.write(addr, (uint32_t*)data, width * height * bytes_per_pixel);
   }
 
   void DVDisplay::define_sprite(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint16_t* data)
   {
-    define_sprite_internal(sprite_data_idx, width, height, (uint32_t*)data);
+    define_sprite_internal(sprite_data_idx, width, height, (uint32_t*)data, 2);
     ram.wait_for_finish_blocking();
   }
 
   void DVDisplay::define_palette_sprite(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint8_t* data)
   {
-    define_sprite_internal(sprite_data_idx, width, height, (uint32_t*)data);
+    define_sprite_internal(sprite_data_idx, width, height, (uint32_t*)data, 1);
     ram.wait_for_finish_blocking();
   }
 
