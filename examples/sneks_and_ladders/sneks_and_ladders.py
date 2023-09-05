@@ -203,12 +203,19 @@ class CollisionList:
 
 # Load the snake sprite data into the PSRAM
 snek_data = TileData("tiles.png", cache="snek_data.bin", source=(0, 64, 32, 80))
+print(snek_data.data())
 start_frame = 0
 end_frame = display.load_animation(start_frame, snek_data.data(), (16, 16))
 
 SNEK_A = list(range(start_frame, end_frame))[0::2]
 SNEK_B = list(range(start_frame, end_frame))[1::2]
 
+
+aaah_data = TileData("tiles.png", cache="aaah_data.bin", source=(48, 64, 16, 80))
+start_frame = end_frame
+end_frame = display.load_animation(start_frame, aaah_data.data(), (16, 16))
+
+AAAAAH = list(range(start_frame, end_frame))
 
 spritelist = SpriteList()
 
@@ -268,4 +275,5 @@ while True:
     spritelist.add(SNEK_B[snek_frame], 50 + 16, 64)
     spritelist.add(SNEK_A[snek_frame], 50 + 32, 64)
     spritelist.add(SNEK_B[snek_frame], 50 + 48, 64)
+    spritelist.add(AAAAAH[snek_frame], 110, 64)
     spritelist.display()
