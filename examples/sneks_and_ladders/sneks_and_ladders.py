@@ -1,4 +1,5 @@
 import time
+import struct
 import pngdec
 from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_P5 as PEN
 
@@ -21,7 +22,6 @@ SPRITE_H = 16
 
 display = PicoGraphics(DISPLAY_PICOVISION, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, frame_width=DISPLAY_WIDTH * FRAME_SCALE_X, frame_height=DISPLAY_HEIGHT * FRAME_SCALE_Y, pen_type=PEN)
 png = pngdec.PNG(display)
-
 
 """
 # Palette Colours - 1bit mode
@@ -86,70 +86,25 @@ for row in level_data:
     level_data_bytes += bytes([n + 5 if n > 0 else n for n in row])
 
 
-class SpriteData:
-    MAX_SPRITE_DATA_SLOTS = 32
+# A basic wrapper around loading tile data from PNG and caching it to .bin
+def cached_png(filename, source=None):
+    cache = filename[:-4]  # strip .png
+    if source is not None:
+        x, y, w, h = source
+        cache = f"{cache}-{x}-{y}-{w}-{h}"
+    cache += ".bin"
 
-    def __init__(self):
-        self.files = [None for _ in range(self.MAX_SPRITE_DATA_SLOTS)]
-        self.crops = [None for _ in range(self.MAX_SPRITE_DATA_SLOTS)]
+    try:
+        with open(cache, "rb") as f:
+            width, height = struct.unpack("HH", f.read(4))
+            data = f.read()
+    except OSError:
+        width, height, data = display.load_sprite(filename, source=source)
 
-    def add(self, filename, crop):
-        slot = self.files.index(None)
-        self.files[slot] = filename
-        self.crops[slot] = crop
-        return slot
-
-    def load(self):
-        # Load sprites into each PSRAM buffer
-        for _ in range(2):
-            for index, filename in enumerate(self.files):
-                if filename is not None:
-                    crop = self.crops[index]
-                    if crop is not None:
-                        display.load_sprite(filename, index, crop)
-                    else:
-                        display.load_sprite(filename, index)
-            display.update()
-
-    def split(self, filename, bounds, sprite_size):
-        bx, by, bw, bh = bounds
-        sw, sh = sprite_size
-
-        sprites_x = int(bw / sw)
-        sprites_y = int(bh / sh)
-
-        indexes = []
-
-        for y in range(sprites_y):
-            for x in range(sprites_x):
-                i = self.add(filename, (bx + (x * sw), by + (y * sh), sw, sh))
-                indexes.append(i)
-
-        return indexes
-
-
-class TileData:
-    def __init__(self, filename, source=None, cache=None):
-        self._filename = filename
-        self._cache = cache
-        try:
-            x, y, w, h = source
-        except ValueError:
-            raise RuntimeError("TileData requires a source region.")
-        try:
-            self._data = open(self._cache, "rb").read()
-            self._width = w
-            self._height = h
-        except OSError:
-            self._width, self._height, self._data = display.load_sprite(filename, source=source)
-            if cache is not None:
-                open(self._cache, "wb").write(self._data)
-
-    def purge(self):
-        pass
-
-    def data(self):
-        return self._width, self._height, self._data
+        with open(cache, "wb") as f:
+            f.write(struct.pack("HH", width, height))
+            f.write(data)
+    return width, height, data
 
 
 class SpriteList:
@@ -201,23 +156,21 @@ class CollisionList:
             display.update()
 
 
-# Load the snake sprite data into the PSRAM
-snek_data = TileData("tiles.png", cache="snek_data.bin", source=(0, 64, 32, 80))
-print(snek_data.data())
-start_frame = 0
-end_frame = display.load_animation(start_frame, snek_data.data(), (16, 16))
+# Load the animation sheet into RAM, we're skipping the first 64 pixels because that's our tilesheet
+animations = cached_png("tiles.png", source=(0, 64, 64, 80))
 
-SNEK_A = list(range(start_frame, end_frame))[0::2]
-SNEK_B = list(range(start_frame, end_frame))[1::2]
+animation_data_slot = 0
 
+# Take a 16x80 slice of our animation sheet and cut it into 16x16 frames for our green snake
+SNEK_A = display.load_animation(animation_data_slot, animations, (16, 16), source=(0, 0, 16, 80))
+animation_data_slot = SNEK_A[-1] + 1  # The next slot is the last frame in the sequence + 1
 
-aaah_data = TileData("tiles.png", cache="aaah_data.bin", source=(48, 64, 16, 80))
-start_frame = end_frame
-end_frame = display.load_animation(start_frame, aaah_data.data(), (16, 16))
+# Take a 16x80 slice of our animation sheet and cut it into 16x16 frames for our yellow snake
+SNEK_B = display.load_animation(animation_data_slot, animations, (16, 16), source=(16, 0, 16, 80))
+animation_data_slot = SNEK_B[-1] + 1  # Ditto
 
-AAAAAH = list(range(start_frame, end_frame))
-
-spritelist = SpriteList()
+# Take a 16x80 slice of our animation sheet and cut it into 16x16 frames for our player
+AAAAAH = display.load_animation(animation_data_slot, animations, (16, 16), source=(48, 0, 16, 80))
 
 
 for _ in range(2):
@@ -244,7 +197,7 @@ for x in range(NUM_FRAMES + 4):
 fire_tilemap_bytes = bytes([n + 1 for n in fire_tilemap])
 
 # Load our 64x64, 16 tile sheet
-tiles = TileData("tiles.png", cache="tiles.bin", source=(0, 0, 64, 64))
+tiles = cached_png("tiles.png", source=(0, 0, 64, 64))
 
 # Clear to background colour
 display.set_pen(BG)
@@ -254,10 +207,11 @@ display.rectangle(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT)
 display.rectangle(0, DISPLAY_HEIGHT - 16, len(fire_tilemap) * 16, 16)
 
 # Draw the level data
-display.tilemap(level_data_bytes, (0, 32, 20, 12), tiles.data())
-display.tilemap(fire_tilemap_bytes, (0, DISPLAY_HEIGHT - 16, len(fire_tilemap), 1), tiles.data())
+display.tilemap(level_data_bytes, (0, 32, 20, 12), tiles)
+display.tilemap(fire_tilemap_bytes, (0, DISPLAY_HEIGHT - 16, len(fire_tilemap), 1), tiles)
 display.update()
 
+spritelist = SpriteList()
 
 t_end = time.ticks_ms()
 print(f"Startup time: {t_end - t_start}ms")
