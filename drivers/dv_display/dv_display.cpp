@@ -104,7 +104,10 @@ namespace pimoroni {
   
   void DVDisplay::flip() {
     if (mode == MODE_PALETTE) {
-      write_palette();
+      if (rewrite_palette > 0) {
+        write_palette();
+        --rewrite_palette;
+      }
       if (pixel_buffer_location.y != -1) {
         ram.write(point_to_address_palette(pixel_buffer_location), pixel_buffer, pixel_buffer_x);
         pixel_buffer_location.y = -1;
@@ -216,6 +219,10 @@ namespace pimoroni {
 
   void DVDisplay::get_edid(uint8_t* edid) {
     i2c->read_bytes(I2C_ADDR, I2C_REG_EDID, edid, 128);
+  }
+
+  void DVDisplay::set_palette_index(uint8_t idx) {
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_PALETTE_INDEX, idx);
   }
 
   void DVDisplay::write(uint32_t address, size_t len, const uint16_t colour)
@@ -356,28 +363,30 @@ namespace pimoroni {
     rewrite_header = true;
     set_scroll_idx_for_lines(-1, 0, display_height);
     if (mode == MODE_PALETTE) {
-      write_palette();
+      rewrite_palette = 2;
     }
   }
   
-  void DVDisplay::set_palette(RGB888 new_palette[PALETTE_SIZE])
+  void DVDisplay::set_palette(RGB888 new_palette[PALETTE_SIZE], int palette_idx)
   {
     for (int i = 0; i < PALETTE_SIZE; ++i) {
-      set_palette_colour(i, new_palette[i]);
+      set_palette_colour(i, new_palette[i], palette_idx);
     }
   }
 
-  void DVDisplay::set_palette_colour(uint8_t entry, RGB888 colour)
+  void DVDisplay::set_palette_colour(uint8_t entry, RGB888 colour, int palette_idx)
   {
-    palette[entry * 3] = (colour >> 16) & 0xFF;
-    palette[entry * 3 + 1] = (colour >> 8) & 0xFF;
-    palette[entry * 3 + 2] = colour & 0xFF;
+    uint8_t* palette_entry = palette + (palette_idx * PALETTE_SIZE + entry) * 3;
+    palette_entry[0] = (colour >> 16) & 0xFF;
+    palette_entry[1] = (colour >> 8) & 0xFF;
+    palette_entry[2] = colour & 0xFF;
+    rewrite_palette = 2;
   }
   
   void DVDisplay::write_palette()
   {
     uint addr = (display_height + 7) * 4;
-    ram.write(addr, (uint32_t*)palette, PALETTE_SIZE * 3);
+    ram.write(addr, (uint32_t*)palette, NUM_PALETTES * PALETTE_SIZE * 3);
   }
 
   void DVDisplay::write_palette_pixel(const Point &p, uint8_t colour)
@@ -433,8 +442,8 @@ namespace pimoroni {
     buf[2] = full_width << 16;
     buf[3] = (uint32_t)display_height << 16;
     buf[4] = 0x00000001;
-    buf[5] = 0x00010000 + display_height + ((uint32_t)bank << 24);
-    buf[6] = 0x04000001;
+    buf[5] = 0x00000000 + display_height + ((uint32_t)bank << 24);
+    buf[6] = 0x04000000 + NUM_PALETTES;
     ram.write(0, buf, 7 * 4);
     ram.wait_for_finish_blocking();
   }
@@ -444,7 +453,7 @@ namespace pimoroni {
     constexpr uint32_t buf_size = 32;
     uint32_t buf[buf_size];
 
-    uint addr = (display_height + 7) * 4 + PALETTE_SIZE * 3;
+    uint addr = (display_height + 7) * 4 + NUM_PALETTES * PALETTE_SIZE * 3;
     uint sprite_type = (uint)mode << 28;
     for (uint32_t i = 0; i < max_num_sprites; i += buf_size) {
       for (uint32_t j = 0; j < buf_size; ++j) {
