@@ -22,48 +22,53 @@ SPRITE_H = 16
 
 FIRE_FRAMES = 5
 
+# Palette Colours - Full Colour
+PALETTE_COLOUR = [
+    (0xff, 0xff, 0xff),
+    (0x2f, 0x2c, 0x1e),
+    (0xff, 0x00, 0x29),
+    (0x41, 0x3d, 0x2e),
+    (0x50, 0x4a, 0x30),
+    (0x15, 0x68, 0x06),
+    (0x12, 0x75, 0x00),
+    (0x7f, 0x68, 0x03),
+    (0x1a, 0x88, 0x05),
+    (0x00, 0xbf, 0x00),
+    (0x8b, 0x8b, 0x8b),
+    (0xbf, 0x9c, 0x00),
+    (0x06, 0xdc, 0x06),
+    (0xdc, 0xb4, 0x06),
+    (0xff, 0xff, 0xff),
+    (0x3b, 0x32, 0x1d)
+]
+
+BLACK = (0x3b, 0x32, 0x1d)
+WHITE = (0xeb, 0xe2, 0xcd)
+
+# Palette Colours - 1bit
+PALETTE_1BIT = [
+    BLACK,
+    WHITE,  # Platform lower
+    WHITE,  # Full Fire
+    WHITE,  # Platform middle
+    BLACK,  #
+    WHITE,  # Ladder right
+    BLACK,  #
+    WHITE,  # Snake 2 shadow
+    WHITE,  # Ladder Left
+    WHITE,  # Snake 1 body
+    WHITE,  # Snake Fangs
+    WHITE,  # Snake 2 Body
+    BLACK,
+    BLACK,  # Yellow Fire
+    BLACK
+]
+
 display = PicoGraphics(DISPLAY_PICOVISION, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, frame_width=DISPLAY_WIDTH * FRAME_SCALE_X, frame_height=DISPLAY_HEIGHT * FRAME_SCALE_Y, pen_type=PEN)
 png = pngdec.PNG(display)
 
-
-# Palette Colours - Full Colour
-display.create_pen(0xff, 0xff, 0xff)
-display.create_pen(0x2f, 0x2c, 0x1e)
-display.create_pen(0xff, 0x00, 0x29)
-display.create_pen(0x41, 0x3d, 0x2e)
-display.create_pen(0x50, 0x4a, 0x30)
-display.create_pen(0x15, 0x68, 0x06)
-display.create_pen(0x12, 0x75, 0x00)
-display.create_pen(0x7f, 0x68, 0x03)
-display.create_pen(0x1a, 0x88, 0x05)
-display.create_pen(0x00, 0xbf, 0x00)
-display.create_pen(0x8b, 0x8b, 0x8b)
-display.create_pen(0xbf, 0x9c, 0x00)
-display.create_pen(0x06, 0xdc, 0x06)
-display.create_pen(0xdc, 0xb4, 0x06)
-display.create_pen(0xff, 0xff, 0xff)
-
-BG = display.create_pen(0x3b, 0x32, 0x1d)
-
-"""
-# Palette Colours - 1bit mode
-display.create_pen(0x00, 0x00, 0x00)
-display.create_pen(0xff, 0xff, 0xff)  #   Platform lower
-display.create_pen(0x00, 0x00, 0x00)
-display.create_pen(0xff, 0xff, 0xff)  #   Platform middle
-display.create_pen(0x00, 0x00, 0x00)  #
-display.create_pen(0xff, 0xff, 0xff)  #   Ladder right
-display.create_pen(0x00, 0x00, 0x00)  #
-display.create_pen(0xff, 0xff, 0xff)  #   Snake 2 shadow
-display.create_pen(0xff, 0xff, 0xff)  #   Ladder Left
-display.create_pen(0xff, 0xff, 0xff)  #   Snake 1 body
-display.create_pen(0xff, 0xff, 0xff)  #   Snake Fangs
-display.create_pen(0xff, 0xff, 0xff)  #   Snake 2 Body
-display.create_pen(0x00, 0x00, 0x00)
-display.create_pen(0xff, 0xff, 0xff)
-
-BG = display.create_pen(0x00, 0x00, 0x00)
-"""
+display.set_palette(PALETTE_COLOUR)
+BG = len(PALETTE_COLOUR) - 1
 
 level_data = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -264,7 +269,12 @@ def draw_level():
     display.update()
 
 
+display.set_palette(PALETTE_COLOUR)
+
+# Draw the level into both PSRAM buffers
 draw_level()
+draw_level()
+
 
 spritelist = SpriteList()
 player = Actor(spritelist, 5 * TILE_W, 2 * TILE_H, AAAAHL, AAAAHR, ping_pong=True)
@@ -276,8 +286,13 @@ snake_d = Actor(spritelist, 16 * TILE_W, 8 * TILE_H, SNEK_BL, SNEK_BR)
 t_end = time.ticks_ms()
 print(f"Startup time: {t_end - t_start}ms")
 
+t_start = time.time()
 
 while True:
+    pal = int((time.time() - t_start) / 5) % 2
+    display.set_palette(PALETTE_1BIT if pal else PALETTE_COLOUR)
+    display.update()
+
     fire_x = int(time.ticks_ms() / 200) % FIRE_FRAMES
     fire_x *= SPRITE_W * FIRE_FRAMES
     display.set_display_offset(fire_x, 0, 3)
