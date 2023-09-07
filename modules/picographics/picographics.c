@@ -9,6 +9,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_module_RGB565_to_RGB_obj, ModPi
 // DV Display specific functions
 MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_set_display_offset_obj, 1, ModPicoGraphics_set_display_offset);
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_set_scroll_index_for_lines_obj, 4, 4, ModPicoGraphics_set_scroll_index_for_lines);
+MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_tilemap_obj, 4, ModPicoGraphics_tilemap);
+MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_load_animation_obj, 4, ModPicoGraphics_load_animation);
 
 // Class Methods
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_update_obj, ModPicoGraphics_update);
@@ -40,8 +42,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_triangle_obj, 7, 7, ModPicoG
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_line_obj, 5, 6, ModPicoGraphics_line);
 
 // Sprites
-MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_load_sprite_obj, 3, ModPicoGraphics_load_sprite);
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_display_sprite_obj, 5, 5, ModPicoGraphics_display_sprite);
+MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_load_sprite_obj, 2, ModPicoGraphics_load_sprite);
+MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_display_sprite_obj, 5, ModPicoGraphics_display_sprite);
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_clear_sprite_obj, ModPicoGraphics_clear_sprite);
 
 // Utility
@@ -78,6 +80,8 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_load_sprite), MP_ROM_PTR(&ModPicoGraphics_load_sprite_obj) },
     { MP_ROM_QSTR(MP_QSTR_display_sprite), MP_ROM_PTR(&ModPicoGraphics_display_sprite_obj) },
     { MP_ROM_QSTR(MP_QSTR_clear_sprite), MP_ROM_PTR(&ModPicoGraphics_clear_sprite_obj) },
+    { MP_ROM_QSTR(MP_QSTR_tilemap), MP_ROM_PTR(&ModPicoGraphics_tilemap_obj) },
+    { MP_ROM_QSTR(MP_QSTR_load_animation), MP_ROM_PTR(&ModPicoGraphics_load_animation_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_create_pen), MP_ROM_PTR(&ModPicoGraphics_create_pen_obj) },
     { MP_ROM_QSTR(MP_QSTR_create_pen_hsv), MP_ROM_PTR(&ModPicoGraphics_create_pen_hsv_obj) },

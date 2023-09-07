@@ -12,6 +12,7 @@ extern "C" {
 #include "pimoroni_i2c.h"
 #include "py/stream.h"
 #include "py/reader.h"
+#include "py/objarray.h"
 #include "extmod/vfs.h"
 
 
@@ -55,6 +56,45 @@ extern void *pngdec_open_callback(const char *filename, int32_t *size);
 extern void pngdec_close_callback(void *handle);
 extern int32_t pngdec_read_callback(PNGFILE *png, uint8_t *p, int32_t c);
 extern int32_t pngdec_seek_callback(PNGFILE *png, int32_t p);
+
+void PNGDrawSprite_Indexed(PNGDRAW *pDraw) {
+#ifdef MICROPY_EVENT_POLL_HOOK
+MICROPY_EVENT_POLL_HOOK
+#endif
+    _PNG_decode_target *target = (_PNG_decode_target*)pDraw->pUser;
+
+    if(pDraw->y < target->source.y || pDraw->y >= target->source.y + target->source.h) return;
+
+    uint8_t *sprite_data = (uint8_t *)target->target;
+    sprite_data += (pDraw->y - target->source.y) * target->source.w;
+
+    //mp_printf(&mp_plat_print, "Decoding scanline at %d, %dbpp, type: %d, width: %d pitch: %d alpha: %d\n", pDraw->y, pDraw->iBpp, pDraw->iPixelType, pDraw->iWidth, pDraw->iPitch, pDraw->iHasAlpha);
+
+    uint8_t *pixel = (uint8_t *)pDraw->pPixels;
+    if (pDraw->iPixelType == PNG_PIXEL_INDEXED) {
+        for(int x = 0; x < pDraw->iWidth; x++) {
+            uint8_t i = 0;
+            if(pDraw->iBpp == 8) {
+                i = *pixel++;
+            } else if (pDraw->iBpp == 4) {
+                i = *pixel;
+                i >>= (x & 0b1) ? 0 : 4;
+                i &= 0xf;
+                if (x & 1) pixel++;
+            } else {
+                i = *pixel;
+                i >>= 6 - ((x & 0b11) << 1);
+                i &= 0x3;
+                if ((x & 0b11) == 0b11) pixel++;
+            }
+            if(x < target->source.x || x >= target->source.x + target->source.w) continue;
+
+            uint8_t a = (pDraw->iHasAlpha && pDraw->pPalette[768 + i] > 0) ? 0x01 : 0x00;
+
+            *sprite_data++ = ((i & 0x1f) << 2) | a;
+        }
+    }
+}
 
 void PNGDrawSprite(PNGDRAW *pDraw) {
 #ifdef MICROPY_EVENT_POLL_HOOK
@@ -222,7 +262,7 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_filename, MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_index, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_index, MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_source, MP_ARG_OBJ, {.u_obj = nullptr} }
     };
 
@@ -230,6 +270,10 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, ModPicoGraphics_obj_t);
+
+    int index = args[ARG_index].u_int;
+
+    bool palette_lookups = self->graphics->pen_type != PicoGraphics::PEN_DV_P5;
 
     // Try loading the file/stream and checking if it's a PNG graphic
     // if it's *not* a PNG then assume it's a raw PicoVision sprite.
@@ -277,27 +321,27 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
 
     mp_buffer_info_t buf;
 
-    int result = -1;
+    int status = -1;
 
     if(mp_obj_is_str_or_bytes(file)){
         GET_STR_DATA_LEN(file, str, str_len);
 
-        result = png->open(
+        status = png->open(
             (const char*)str,
             pngdec_open_callback,
             pngdec_close_callback,
             pngdec_read_callback,
             pngdec_seek_callback,
-            PNGDrawSprite);
+            palette_lookups ? PNGDrawSprite : PNGDrawSprite_Indexed);
 
     // Source is a buffer
     } else {
         mp_get_buffer_raise(file, &buf, MP_BUFFER_READ);
 
-        result = png->openRAM((uint8_t *)buf.buf, buf.len, PNGDrawSprite);
+        status = png->openRAM((uint8_t *)buf.buf, buf.len, palette_lookups ? PNGDrawSprite : PNGDrawSprite_Indexed);
     }
 
-    if(result != 0) mp_raise_msg(&mp_type_RuntimeError, "load_sprite: could not read file/buffer.");
+    if(status != 0) mp_raise_msg(&mp_type_RuntimeError, "load_sprite: could not read file/buffer.");
 
     int width = png->getWidth();
     int height = png->getHeight();
@@ -325,28 +369,278 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
     }
 
     // Create a buffer big enough to hold the data decoded from PNG by our draw callback
-    decode_target->target = m_malloc(width * height * sizeof(uint16_t));
 
-    result = png->decode(decode_target, 0);
+    // 16-bit RGB555 with 1-bit alpha vs 5-bit palette entries with 3-bit alpha
+    size_t bytes_per_pixel = palette_lookups ? sizeof(uint16_t) : sizeof(uint8_t);
+    decode_target->target = m_malloc(width * height * bytes_per_pixel);
+
+    status = png->decode(decode_target, 0);
 
     // Close the file since we've opened it on-demand
     png->close();
 
-    self->display->define_sprite(args[ARG_index].u_int, width, height, (uint16_t *)(decode_target->target));
+    mp_obj_t result;
+
+    if (index == -1) {
+        mp_obj_t tuple[3] = {
+            mp_obj_new_int(width),
+            mp_obj_new_int(height),
+            mp_obj_new_bytearray(width * height * bytes_per_pixel, decode_target->target)
+        };
+        result = mp_obj_new_tuple(3, tuple);
+    } else {
+        if (status == 0) {
+            if(bytes_per_pixel == 1) {
+                self->display->define_palette_sprite(args[ARG_index].u_int, width, height, (uint8_t *)(decode_target->target));
+            } else {
+                self->display->define_sprite(args[ARG_index].u_int, width, height, (uint16_t *)(decode_target->target));
+            }
+        }
+        result = status == 0 ? mp_const_true : mp_const_false;
+    }
 
     m_free(decode_target->target);
     m_free(decode_target);
     m_free(png);
 
-    return result == 0 ? mp_const_true : mp_const_false;
+    return result;
 }
 
-mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *args) {
-    enum { ARG_self, ARG_slot, ARG_sprite_index, ARG_x, ARG_y };
+mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_slot, ARG_data, ARG_frame_size };
 
-    dv_display.set_sprite(mp_obj_get_int(args[ARG_slot]), 
-                          mp_obj_get_int(args[ARG_sprite_index]),
-                          {mp_obj_get_int(args[ARG_x]), mp_obj_get_int(args[ARG_y])});
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_slot, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_data, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_frame_size, MP_ARG_REQUIRED | MP_ARG_OBJ }
+    };
+
+    mp_buffer_info_t animation_data;
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, ModPicoGraphics_obj_t);
+
+    int slot = args[ARG_slot].u_int;
+
+    // Frame size
+    mp_obj_tuple_t *tuple_frame_size = MP_OBJ_TO_PTR2(args[ARG_frame_size].u_obj, mp_obj_tuple_t);
+
+    if(tuple_frame_size->len != 2) mp_raise_ValueError("load_animation: frame_size tuple must contain (w, h)");
+
+    int frame_w = mp_obj_get_int(tuple_frame_size->items[0]);
+    int frame_h = mp_obj_get_int(tuple_frame_size->items[1]);
+
+    // Animation data
+    mp_obj_tuple_t *tuple_frame_data = MP_OBJ_TO_PTR2(args[ARG_data].u_obj, mp_obj_tuple_t);
+
+    if(tuple_frame_data->len != 3) mp_raise_ValueError("load_animation: data tuple must contain (w, h, data)");
+
+    int tilesheet_w = mp_obj_get_int(tuple_frame_data->items[0]);
+    int tilesheet_h = mp_obj_get_int(tuple_frame_data->items[1]);
+    mp_get_buffer_raise(tuple_frame_data->items[2], &animation_data, MP_BUFFER_READ);
+
+    int frames_x = tilesheet_w / frame_w;
+    int frames_y = tilesheet_h / frame_h;
+
+    if(self->graphics->pen_type == PicoGraphics::PEN_DV_P5) {
+
+        uint8_t *buf = m_new(uint8_t, frame_w * frame_h);
+
+        for(auto y = 0; y < frames_y; y++) {
+            int o_y = y * frame_h * tilesheet_w;
+            for(auto x = 0; x < frames_x; x++) {
+                int o_x = x * frame_w;
+                uint8_t *p = buf;
+                uint8_t *data = (uint8_t *)animation_data.buf; // Src
+                data += o_x + o_y;
+                for(auto fy = 0; fy < frame_h; fy++) {
+                    for(auto fx = 0; fx < frame_w; fx++) {
+                        *p++ = *data++;
+                    }
+                    // Advance to the next row
+                    data += tilesheet_w - frame_w;
+                }
+                self->display->define_palette_sprite(slot++, frame_w, frame_h, buf);
+            }
+        }
+
+    } else {
+
+        uint16_t *buf = m_new(uint16_t, frame_w * frame_h);
+
+        for(auto y = 0; y < frames_y; y++) {
+            int o_y = y * frame_h * tilesheet_w;
+            for(auto x = 0; x < frames_x; x++) {
+                int o_x = x * frame_w;
+                uint16_t *p = buf;
+                uint16_t *data = (uint16_t *)animation_data.buf;
+                data += o_x + o_y;
+                for(auto fy = 0; fy < frame_h; fy++) {
+                    for(auto fx = 0; fx < frame_w; fx++) {
+                        *p++ = *data++;
+                    }
+                    data += tilesheet_w - frame_w;
+                }
+                self->display->define_sprite(slot++, frame_w, frame_h, buf);
+            }
+        }
+    }
+
+    return mp_obj_new_int(slot);
+}
+
+mp_obj_t ModPicoGraphics_tilemap(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_tilemap, ARG_bounds, ARG_tile_data };
+
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_tilemap, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_bounds, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_tile_data, MP_ARG_REQUIRED | MP_ARG_OBJ },
+    };
+
+    mp_buffer_info_t tilesheet_data;
+    mp_buffer_info_t tilemap_data;
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, ModPicoGraphics_obj_t);
+
+    // drawing region
+    mp_obj_tuple_t *tuple_bounds = MP_OBJ_TO_PTR2(args[ARG_bounds].u_obj, mp_obj_tuple_t);
+
+    if(tuple_bounds->len != 4) mp_raise_ValueError("tilemap: bounds tuple must contain (x, y, w, h)");
+
+    int origin_x = mp_obj_get_int(tuple_bounds->items[0]);
+    int origin_y = mp_obj_get_int(tuple_bounds->items[1]);
+    int tiles_x = mp_obj_get_int(tuple_bounds->items[2]);
+    int tiles_y = mp_obj_get_int(tuple_bounds->items[3]);
+
+    // sprite data
+    mp_obj_tuple_t *tuple_tile_data = MP_OBJ_TO_PTR2(args[ARG_tile_data].u_obj, mp_obj_tuple_t);
+
+    if(tuple_tile_data->len != 3) mp_raise_ValueError("tilemap: tile_data tuple must contain (w, h, data)");
+
+    int tilesheet_stride = mp_obj_get_int(tuple_tile_data->items[0]);
+    mp_get_buffer_raise(tuple_tile_data->items[2], &tilesheet_data, MP_BUFFER_READ);
+
+    mp_get_buffer_raise(args[ARG_tilemap].u_obj, &tilemap_data, MP_BUFFER_READ);
+
+    uint8_t *tilemap = (uint8_t *)tilemap_data.buf;
+
+    if(self->graphics->pen_type == PicoGraphics::PEN_DV_P5) {
+
+        uint8_t *pixel_data = (uint8_t *)tilesheet_data.buf;
+
+        for(auto y = 0; y < tiles_y * 16; y++) {
+            int tile_y = y / 16 * tiles_x;
+            for(auto x = 0; x < tiles_x * 16; x++) {
+                int tile_x = x / 16;
+                int tile_index = tile_x + tile_y;
+                int tile = tilemap[tile_index];
+                if(tile == 0) continue;
+                tile--;
+                tile &= 0b1111;
+
+                int tilesheet_x = (tile & 0b11) * 16;
+                int tilesheet_y = ((tile >> 2) & 0b11) * 16;
+
+                int tile_pixel_x = (x & 0b1111) + tilesheet_x;
+                int tile_pixel_y = (y & 0b1111) + tilesheet_y;
+
+                int tilesheet_index = tile_pixel_y * tilesheet_stride + tile_pixel_x;
+
+                uint8_t tile_pixel = pixel_data[tilesheet_index];
+
+                if((tile_pixel & 0x01) == 0) continue;
+
+                self->graphics->set_pen((tile_pixel >> 2) & 0x1f);
+
+                self->graphics->pixel({
+                    origin_x + x,
+                    origin_y + y
+                });
+            }
+        }
+
+    } else {
+
+        uint16_t *pixel_data = (uint16_t *)tilesheet_data.buf;
+
+        for(auto y = 0; y < tiles_y * 16; y++) {
+            int tile_y = y / 16 * tiles_x;
+            for(auto x = 0; x < tiles_x * 16; x++) {
+                int tile_x = x / 16;
+                int tile_index = tile_x + tile_y;
+                int tile = tilemap[tile_index];
+                if(tile == 0) continue;
+                tile--;
+                tile &= 0b1111;
+
+                int tilesheet_x = (tile & 0b11) * 16;
+                int tilesheet_y = ((tile >> 2) & 0b11) * 16;
+
+                int tile_pixel_x = (x & 0b1111) + tilesheet_x;
+                int tile_pixel_y = (y & 0b1111) + tilesheet_y;
+
+                int tilesheet_index = tile_pixel_y * tilesheet_stride + tile_pixel_x;
+
+                RGB555 tile_pixel = pixel_data[tilesheet_index];
+
+                if((tile_pixel & 0x8000) == 0) continue;
+
+                uint8_t r, g, b;
+
+                switch(self->graphics->pen_type) {
+                    case PicoGraphics::PEN_DV_RGB888:
+                        r = (tile_pixel & 0x7c00) >> 7;
+                        g = (tile_pixel & 0x03e0) >> 2;
+                        b = (tile_pixel & 0x001f) << 3;
+                        self->graphics->set_pen(RGB(r, g, b).to_rgb888());
+                        break;
+                    case PicoGraphics::PEN_DV_RGB555:
+                        self->graphics->set_pen((RGB555)tile_pixel);
+                        break;
+                    default:  // Non-dv pen types
+                        break;
+                };
+                self->graphics->pixel({
+                    origin_x + x,
+                    origin_y + y
+                });
+            }
+
+        }
+    }
+
+    return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_slot, ARG_sprite_index, ARG_x, ARG_y, ARG_blend_mode, ARG_v_scale };
+
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_slot, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_sprite_index, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_x, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_blend_mode, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_v_scale, MP_ARG_INT, {.u_int = 1} }
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    dv_display.set_sprite(args[ARG_slot].u_int, 
+                          args[ARG_sprite_index].u_int,
+                          {args[ARG_x].u_int, args[ARG_y].u_int},
+                          (DVDisplay::SpriteBlendMode)args[ARG_blend_mode].u_int,
+                          args[ARG_v_scale].u_int);
 
     return mp_const_true;
 }

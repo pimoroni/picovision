@@ -8,7 +8,7 @@ on:
 
 env:
   MICROPYTHON_VERSION: 856e08b1931b88271816a2f60648f6ff332235b2
-  PIMORONI_PICO_VERSION: main
+  PIMORONI_PICO_VERSION: v1.20.5
   WORKFLOW_VERSION: v1
 
 jobs:
@@ -64,16 +64,11 @@ jobs:
           - name: PicoVision
             shortname: picovision
             board: PIMORONI_PICOVISION
-            # 0x10000000 + (2*1024*1024) - (848*1024)
-            dir2uf2_fs_start: 269664256
-            dir2uf2_fs_size: 868352
 
     env:
       RELEASE_FILE: pimoroni-${{matrix.shortname}}-${{github.event.release.tag_name || github.sha}}-micropython.uf2
-      RELEASE_FILE_WITH_EXAMPLES: pimoroni-${{matrix.shortname}}-${{github.event.release.tag_name || github.sha}}-micropython-with-examples.uf2
       FIRMWARE_DIR: "$GITHUB_WORKSPACE/picovision/firmware"
       BOARD_DIR: "$GITHUB_WORKSPACE/picovision/firmware/${{matrix.board}}"
-      EXAMPLES_DIR: "$GITHUB_WORKSPACE/picovision/examples"
 
     steps:
     - name: Compiler Cache
@@ -105,13 +100,6 @@ jobs:
         ref: ${{env.PIMORONI_PICO_VERSION}}
         submodules: true
         path: pimoroni-pico
-
-    # Check out dir2u2f
-    - uses: actions/checkout@v3
-      with:
-        repository: gadgetoid/dir2uf2
-        ref: v0.0.1
-        path: dir2uf2
 
     # HACK: Patch startup overclock into Pico SDK
     - name: "HACK: Startup Overclock Patch"
@@ -152,23 +140,11 @@ jobs:
       run: |
         cp firmware.uf2 ${{env.RELEASE_FILE}}
 
-    - name: Append Filesystem
-      shell: bash
-      run: |
-        python3 -m pip install littlefs-python
-        ./dir2uf2/dir2uf2 --fs-start ${{matrix.dir2uf2_fs_start}} --fs-size ${{matrix.dir2uf2_fs_size}} --append-to micropython/ports/rp2/build/${{env.RELEASE_FILE}} --manifest ${{env.BOARD_DIR}}/uf2-manifest.txt --filename with-examples.uf2 ${{env.EXAMPLES_DIR}}/
-
     - name: Store .uf2 as artifact
       uses: actions/upload-artifact@v3
       with:
         name: ${{env.RELEASE_FILE}}
         path: micropython/ports/rp2/build/${{env.RELEASE_FILE}}
-
-    - name: Store .uf2 + Examples as artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
-        path: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
 
     - name: Upload .uf2
       if: github.event_name == 'release'
@@ -179,15 +155,4 @@ jobs:
         asset_path: micropython/ports/rp2/build/${{env.RELEASE_FILE}}
         upload_url: ${{github.event.release.upload_url}}
         asset_name: ${{env.RELEASE_FILE}}
-        asset_content_type: application/octet-stream
-
-    - name: Upload .uf2 + Examples
-      if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      with:
-        asset_path: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
-        upload_url: ${{github.event.release.upload_url}}
-        asset_name: ${{env.RELEASE_FILE_WITH_EXAMPLES}}
         asset_content_type: application/octet-stream

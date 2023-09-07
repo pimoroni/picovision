@@ -66,6 +66,8 @@ extern mp_obj_t ModPicoGraphics_get_required_buffer_size(mp_obj_t display_in, mp
 // DV Display specific functions
 extern mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 extern mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_t *args);
+extern mp_obj_t ModPicoGraphics_tilemap(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
+extern mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 
 // Class methods
 extern mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
@@ -104,7 +106,7 @@ extern mp_obj_t ModPicoGraphics_line(size_t n_args, const mp_obj_t *args);
 
 // Sprites
 extern mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
-extern mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *args);
+extern mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 extern mp_obj_t ModPicoGraphics_clear_sprite(mp_obj_t self_in, mp_obj_t slot);
 
 // Utility

@@ -13,6 +13,9 @@ namespace pimoroni {
       int create_pen_hsv(float h, float s, float v) override;
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
+      void set_pixel_alpha(const Point &p, const uint8_t a) override;
+
+      bool supports_alpha_blend() override {return true;}
 
       static size_t buffer_size(uint w, uint h) {
         return w * h * sizeof(RGB555);
@@ -31,6 +34,9 @@ namespace pimoroni {
       int create_pen_hsv(float h, float s, float v) override;
       void set_pixel(const Point &p) override;
       void set_pixel_span(const Point &p, uint l) override;
+      void set_pixel_alpha(const Point &p, const uint8_t a) override;
+
+      bool supports_alpha_blend() override {return true;}
 
       static size_t buffer_size(uint w, uint h) {
         return w * h * sizeof(RGB888);

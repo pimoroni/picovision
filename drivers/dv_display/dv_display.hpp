@@ -162,7 +162,7 @@ namespace pimoroni {
 
       // Display/move a sprite to a given position.
       // Note sprite positions are always display relative (not scrolled)
-      void set_sprite(int sprite_num, uint16_t sprite_data_idx, const Point &p, SpriteBlendMode blend_mode = BLEND_DEPTH);
+      void set_sprite(int sprite_num, uint16_t sprite_data_idx, const Point &p, SpriteBlendMode blend_mode = BLEND_DEPTH, int v_scale = 1);
       void clear_sprite(int sprite_num);
 
       // 32 colour palette mode.  Note that palette entries range from 0-31,
@@ -231,7 +231,7 @@ namespace pimoroni {
       void read(uint32_t address, size_t len, uint8_t *data);
       void write(uint32_t address, size_t len, const RGB888 colour);
 
-      void define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data);
+      void define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data, uint32_t bytes_per_pixel);
 
       uint32_t point_to_address(const Point& p) const;
       int pixel_size() const;

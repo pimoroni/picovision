@@ -26,4 +26,20 @@ namespace pimoroni {
     void PicoGraphics_PenDV_RGB555::set_pixel_span(const Point &p, uint l) {
         driver.write_pixel_span(p, l, color);
     }
+    void PicoGraphics_PenDV_RGB555::set_pixel_alpha(const Point &p, const uint8_t a) {
+        uint16_t src = 0;
+        driver.read_pixel_span(p, 1, &src);
+
+        uint8_t src_r = (src >> 7) & 0b11111000;
+        uint8_t src_g = (src >> 2) & 0b11111000;
+        uint8_t src_b = (src << 3) & 0b11111000;
+
+        uint8_t dst_r = (color >> 7) & 0b11111000;
+        uint8_t dst_g = (color >> 2) & 0b11111000;
+        uint8_t dst_b = (color << 3) & 0b11111000;
+
+        RGB555 blended = RGB(src_r, src_g, src_b).blend(RGB(dst_r, dst_g, dst_b), a).to_rgb555();
+
+        driver.write_pixel(p, blended);
+    };
 }
