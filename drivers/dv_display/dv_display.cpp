@@ -247,7 +247,20 @@ namespace pimoroni {
 
   void DVDisplay::read(uint32_t address, size_t len, uint16_t *data)
   {
-    ram.read_blocking(address, (uint32_t*)data, (len + 1) >> 1);
+    if ((uintptr_t)data & 1) {
+      uint32_t tmp;
+      ram.read_blocking(address, &tmp, 1);
+      *data++ = tmp & 0xFFFF;
+      len--;
+    }
+    if ((len >> 1) > 0) {
+      ram.read_blocking(address, (uint32_t*)data, len >> 1);
+    }
+    if (len & 1) {
+      uint32_t tmp;
+      ram.read_blocking(address, &tmp, 1);
+      data[len-1] = tmp & 0xFFFF;
+    }
   }
 
   void DVDisplay::write(uint32_t address, size_t len, const uint8_t colour)
@@ -260,7 +273,28 @@ namespace pimoroni {
 
   void DVDisplay::read(uint32_t address, size_t len, uint8_t *data)
   {
-    ram.read_blocking(address, (uint32_t*)data, len);
+    if ((uintptr_t)data & 3) {
+      uint32_t tmp;
+      int unaligned_len = std::min(4 - ((uintptr_t)data & 3), len);
+      ram.read_blocking(address, &tmp, 1);
+      for (int i = 0; i < unaligned_len; ++i) {
+        *data++ = tmp & 0xFF;
+        tmp >>= 8;
+      }
+      len -= unaligned_len;
+    }
+    if ((len >> 2) > 0) {
+      ram.read_blocking(address, (uint32_t*)data, len >> 2);
+    }
+    if (len & 3) {
+      uint32_t tmp;
+      ram.read_blocking(address, &tmp, 1);
+      data += len & ~3;
+      for (uint32_t i = 0; i < (len & 3); ++i) {
+        *data++ = tmp & 0xFF;
+        tmp >>= 8;
+      }
+    }
   }
 
   void DVDisplay::write_pixel(const Point &p, uint16_t colour)
