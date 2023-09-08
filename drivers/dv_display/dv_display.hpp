@@ -217,6 +217,14 @@ namespace pimoroni {
       // The supplied buffer must be at least 128 bytes long
       void get_edid(uint8_t* edid);
 
+      // Raw access to frame buffer
+      uint32_t point_to_address(const Point& p) const;
+      int pixel_size() const;
+      int frame_row_stride() const { return (int)frame_width * 6; }
+      void raw_read_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.read(address, data, len_in_words); }
+      void raw_write_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.write(address, data, len_in_words << 2); }
+      void raw_wait_for_finish_blocking() { ram.wait_for_finish_blocking(); }
+
     protected:
       uint8_t palette[NUM_PALETTES * PALETTE_SIZE * 3] alignas(4);
       bool rewrite_header = false;
@@ -243,9 +251,6 @@ namespace pimoroni {
       void write(uint32_t address, size_t len, const RGB888 colour);
 
       void define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data, uint32_t bytes_per_pixel);
-
-      uint32_t point_to_address(const Point& p) const;
-      int pixel_size() const;
 
       uint32_t point_to_address16(const Point &p) const {
         return base_address + ((p.y * (uint32_t)frame_width * 3) + p.x) * 2;
