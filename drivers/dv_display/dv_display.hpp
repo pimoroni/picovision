@@ -18,6 +18,7 @@ namespace pimoroni {
   class DVDisplay : public IDirectDisplayDriver<uint16_t>, public IDirectDisplayDriver<RGB888>, public IPaletteDisplayDriver {
   public:
     static constexpr int PALETTE_SIZE = 32;
+    static constexpr int NUM_PALETTES = 2;
 
     enum Mode {
       MODE_PALETTE = 2,
@@ -50,6 +51,7 @@ namespace pimoroni {
     static constexpr uint I2C_REG_GPIO_HI_PULL_UP = 0xCB;
     static constexpr uint I2C_REG_GPIO_HI_PULL_DOWN = 0xCC;
     static constexpr uint I2C_REG_EDID = 0xED;
+    static constexpr uint I2C_REG_PALETTE_INDEX = 0xEE;
     static constexpr uint I2C_REG_SCROLL_BASE = 0xF0;
 
     //--------------------------------------------------
@@ -168,9 +170,12 @@ namespace pimoroni {
       // 32 colour palette mode.  Note that palette entries range from 0-31,
       // but when writing colour values the palette entry is in bits 6-2, so the
       // entry value is effectively multiplied by 4.
+      // The palette idx 
       void set_mode(Mode new_mode);
-      void set_palette(RGB888 palette[PALETTE_SIZE]);
-      void set_palette_colour(uint8_t entry, RGB888 colour);
+      void set_palette(RGB888 palette[PALETTE_SIZE], int palette_idx = 0);
+      void set_palette_colour(uint8_t entry, RGB888 colour, int palette_idx);
+      void set_palette_colour(uint8_t entry, RGB888 colour) { set_palette_colour(entry, colour, 0); }
+      void set_palette_index(uint8_t idx);
 
       void write_palette_pixel(const Point &p, uint8_t colour);
       void write_palette_pixel_span(const Point &p, uint l, uint8_t colour);
@@ -209,8 +214,9 @@ namespace pimoroni {
       void get_edid(uint8_t* edid);
 
     protected:
-      uint8_t palette[PALETTE_SIZE * 3] alignas(4);
+      uint8_t palette[NUM_PALETTES * PALETTE_SIZE * 3] alignas(4);
       bool rewrite_header = false;
+      uint8_t rewrite_palette = 0;
 
       virtual void write_palette();
       virtual void write_header();
