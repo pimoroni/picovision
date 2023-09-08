@@ -43,7 +43,7 @@ PALETTE_COLOUR = [
 ]
 
 BLACK = (0x3b, 0x32, 0x1d)
-WHITE = (0xeb, 0xe2, 0xcd)
+WHITE = (0xcb, 0xc2, 0xad)
 
 # Palette Colours - 1bit
 PALETTE_1BIT = [
@@ -54,20 +54,25 @@ PALETTE_1BIT = [
     BLACK,  #
     WHITE,  # Ladder right
     BLACK,  #
-    WHITE,  # Snake 2 shadow
+    BLACK,  # Snake 2 shadow
     WHITE,  # Ladder Left
     WHITE,  # Snake 1 body
     WHITE,  # Snake Fangs
     WHITE,  # Snake 2 Body
     BLACK,
     BLACK,  # Yellow Fire
+    BLACK,
     BLACK
 ]
 
 display = PicoGraphics(DISPLAY_PICOVISION, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, frame_width=DISPLAY_WIDTH * FRAME_SCALE_X, frame_height=DISPLAY_HEIGHT * FRAME_SCALE_Y, pen_type=PEN)
 png = pngdec.PNG(display)
 
+display.set_local_palette(0)
 display.set_palette(PALETTE_COLOUR)
+display.set_local_palette(1)
+display.set_palette(PALETTE_1BIT)
+
 BG = len(PALETTE_COLOUR) - 1
 
 level_data = [
@@ -269,10 +274,7 @@ def draw_level():
     display.update()
 
 
-display.set_palette(PALETTE_COLOUR)
-
 # Draw the level into both PSRAM buffers
-draw_level()
 draw_level()
 
 
@@ -290,8 +292,7 @@ t_start = time.time()
 
 while True:
     pal = int((time.time() - t_start) / 5) % 2
-    display.set_palette(PALETTE_1BIT if pal else PALETTE_COLOUR)
-    display.update()
+    display.set_remote_palette(pal)
 
     fire_x = int(time.ticks_ms() / 200) % FIRE_FRAMES
     fire_x *= SPRITE_W * FIRE_FRAMES
