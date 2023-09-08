@@ -1,9 +1,9 @@
 #include "pico_graphics_dv.hpp"
 
 namespace pimoroni {
-    PicoGraphics_PenDV_RGB555::PicoGraphics_PenDV_RGB555(uint16_t width, uint16_t height, IDirectDisplayDriver<uint16_t> &direct_display_driver)
+    PicoGraphics_PenDV_RGB555::PicoGraphics_PenDV_RGB555(uint16_t width, uint16_t height, DVDisplay &dv_display)
       : PicoGraphics(width, height, nullptr),
-        driver(direct_display_driver) 
+        driver(dv_display)
     {
         this->pen_type = PEN_DV_RGB555;
     }

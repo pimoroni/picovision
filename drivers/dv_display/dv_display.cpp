@@ -389,6 +389,10 @@ namespace pimoroni {
     ram.write(addr, (uint32_t*)palette, NUM_PALETTES * PALETTE_SIZE * 3);
   }
 
+  RGB888* DVDisplay::get_palette(uint8_t idx) {
+    return (uint32_t*)palette;
+  }
+
   void DVDisplay::write_palette_pixel(const Point &p, uint8_t colour)
   {
     if (pixel_buffer_location.y == p.y && pixel_buffer_location.x + pixel_buffer_x == p.x) {

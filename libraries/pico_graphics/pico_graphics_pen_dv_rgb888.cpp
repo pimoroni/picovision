@@ -1,9 +1,9 @@
 #include "pico_graphics_dv.hpp"
 
 namespace pimoroni {
-    PicoGraphics_PenDV_RGB888::PicoGraphics_PenDV_RGB888(uint16_t width, uint16_t height, IDirectDisplayDriver<RGB888> &direct_display_driver)
+    PicoGraphics_PenDV_RGB888::PicoGraphics_PenDV_RGB888(uint16_t width, uint16_t height, DVDisplay &dv_display)
       : PicoGraphics(width, height, nullptr),
-        driver(direct_display_driver) 
+        driver(dv_display)
     {
         this->pen_type = PEN_DV_RGB888;
     }
@@ -29,7 +29,8 @@ namespace pimoroni {
     void PicoGraphics_PenDV_RGB888::set_pixel_alpha(const Point &p, const uint8_t a) {
         uint32_t src = 0;
 
-        driver.read_pixel_span(p, 2, &src);
+        // TODO we need a *uint32_t read_pixel_span here?
+        //driver.read_pixel_span(p, 2, &src);
 
         // TODO: "uint" should be RGB888 but there's curently a mismatch between "uint32_t" and "unsigned int"
         RGB888 blended = RGB((uint)src).blend(RGB((uint)color), a).to_rgb888();

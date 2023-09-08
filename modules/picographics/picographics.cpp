@@ -186,17 +186,17 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     // Create an instance of the graphics library and DV display driver
     switch((PicoGraphicsPenType)pen_type) {
         case PEN_DV_RGB888:
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, frame_width, frame_height, *(IDirectDisplayDriver<RGB888> *)&dv_display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, frame_width, frame_height, dv_display);
             dv_display.init(width, height, DVDisplay::MODE_RGB888, frame_width, frame_height);
             dv_display.set_mode(DVDisplay::MODE_RGB888);
             break;
         case PEN_DV_RGB555:
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, frame_width, frame_height, *(IDirectDisplayDriver<uint16_t> *)&dv_display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, frame_width, frame_height, dv_display);
             dv_display.init(width, height, DVDisplay::MODE_RGB555, frame_width, frame_height);
             dv_display.set_mode(DVDisplay::MODE_RGB555);
             break;
         case PEN_DV_P5:
-            self->graphics = m_new_class(PicoGraphics_PenDV_P5, frame_width, frame_height, *(IPaletteDisplayDriver *)&dv_display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_P5, frame_width, frame_height, dv_display);
             dv_display.init(width, height, DVDisplay::MODE_PALETTE, frame_width, frame_height);
             dv_display.set_mode(DVDisplay::MODE_PALETTE);
             break;

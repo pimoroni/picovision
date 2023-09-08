@@ -15,7 +15,7 @@
 namespace pimoroni {
 
   // This is ARGB1555 only for now
-  class DVDisplay : public IDirectDisplayDriver<uint16_t>, public IDirectDisplayDriver<RGB888>, public IPaletteDisplayDriver {
+  class DVDisplay {
   public:
     static constexpr int PALETTE_SIZE = 32;
     static constexpr int NUM_PALETTES = 2;
@@ -135,14 +135,14 @@ namespace pimoroni {
       }
       
       // 16bpp interface
-      void write_pixel(const Point &p, uint16_t colour) override;
-      void write_pixel_span(const Point &p, uint l, uint16_t colour) override;
+      void write_pixel(const Point &p, uint16_t colour);
+      void write_pixel_span(const Point &p, uint l, uint16_t colour);
       void write_pixel_span(const Point &p, uint l, uint16_t *data);
-      void read_pixel_span(const Point &p, uint l, uint16_t *data) override;
+      void read_pixel_span(const Point &p, uint l, uint16_t *data);
 
       // 24bpp interface
-      void write_pixel(const Point &p, RGB888 colour) override;
-      void write_pixel_span(const Point &p, uint l, RGB888 colour) override;
+      void write_pixel(const Point &p, RGB888 colour);
+      void write_pixel_span(const Point &p, uint l, RGB888 colour);
 
       void init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
       void flip();
@@ -176,6 +176,7 @@ namespace pimoroni {
       void set_palette_colour(uint8_t entry, RGB888 colour, int palette_idx);
       void set_palette_colour(uint8_t entry, RGB888 colour) { set_palette_colour(entry, colour, 0); }
       void set_palette_index(uint8_t idx);
+      RGB888* get_palette(uint8_t idx = 0);
 
       void write_palette_pixel(const Point &p, uint8_t colour);
       void write_palette_pixel_span(const Point &p, uint l, uint8_t colour);
