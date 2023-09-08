@@ -808,6 +808,22 @@ mp_obj_t ModPicoGraphics_create_pen_hsv(size_t n_args, const mp_obj_t *args) {
     return mp_obj_new_int(result);
 }
 
+mp_obj_t ModPicoGraphics_set_remote_palette(mp_obj_t self_in, mp_obj_t index) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->display->set_display_palette_index(mp_obj_get_int(index));
+
+    return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_set_local_palette(mp_obj_t self_in, mp_obj_t index) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->display->set_local_palette_index(mp_obj_get_int(index));
+
+    return mp_const_none;
+}
+
 mp_obj_t ModPicoGraphics_set_thickness(mp_obj_t self_in, mp_obj_t pen) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
 

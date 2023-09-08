@@ -173,9 +173,12 @@ namespace pimoroni {
       // The palette idx 
       void set_mode(Mode new_mode);
       void set_palette(RGB888 palette[PALETTE_SIZE], int palette_idx = 0);
+      void set_palette(RGB888 palette[PALETTE_SIZE]);
       void set_palette_colour(uint8_t entry, RGB888 colour, int palette_idx);
-      void set_palette_colour(uint8_t entry, RGB888 colour) { set_palette_colour(entry, colour, 0); }
-      void set_palette_index(uint8_t idx);
+      void set_palette_colour(uint8_t entry, RGB888 colour);
+      void set_display_palette_index(uint8_t idx);
+      void set_local_palette_index(uint8_t idx);
+      uint8_t get_local_palette_index();
       RGB888* get_palette(uint8_t idx = 0);
 
       void write_palette_pixel(const Point &p, uint8_t colour);
@@ -218,6 +221,7 @@ namespace pimoroni {
       uint8_t palette[NUM_PALETTES * PALETTE_SIZE * 3] alignas(4);
       bool rewrite_header = false;
       uint8_t rewrite_palette = 0;
+      uint8_t current_palette = 0;
 
       virtual void write_palette();
       virtual void write_header();

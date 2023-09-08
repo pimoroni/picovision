@@ -24,6 +24,7 @@ namespace pimoroni {
         color = c & 0x1f;
     }
     void PicoGraphics_PenDV_P5::set_pen(uint8_t r, uint8_t g, uint8_t b) {
+        uint8_t current_palette = driver.get_local_palette_index();
         RGB888 *driver_palette = driver.get_palette(current_palette);
         RGB palette[palette_size];
         for(auto i = 0u; i < palette_size; i++) {
@@ -37,16 +38,17 @@ namespace pimoroni {
         i &= 0x1f;
         used[current_palette][i] = true;
         cache_built = false;
-        driver.set_palette_colour(i, RGB_to_RGB888(r, g, b), current_palette);
+        driver.set_palette_colour(i, RGB_to_RGB888(r, g, b));
         return i;
     }
     int PicoGraphics_PenDV_P5::create_pen(uint8_t r, uint8_t g, uint8_t b) {
+        uint8_t current_palette = driver.get_local_palette_index();
         // Create a colour and place it in the palette if there's space
         for(auto i = 0u; i < palette_size; i++) {
             if(!used[current_palette][i]) {
                 used[current_palette][i] = true;
                 cache_built = false;
-                driver.set_palette_colour(i, RGB_to_RGB888(r, g, b), current_palette);
+                driver.set_palette_colour(i, RGB_to_RGB888(r, g, b));
                 return i;
             }
         }
@@ -57,7 +59,8 @@ namespace pimoroni {
         return create_pen(p.r, p.g, p.b);
     }
     int PicoGraphics_PenDV_P5::reset_pen(uint8_t i) {
-        driver.set_palette_colour(i, 0, current_palette);
+        uint8_t current_palette = driver.get_local_palette_index();
+        driver.set_palette_colour(i, 0);
         used[current_palette][i] = false;
         cache_built = false;
         return i;
@@ -87,6 +90,8 @@ namespace pimoroni {
 
     void PicoGraphics_PenDV_P5::set_pixel_dither(const Point &p, const RGB &c) {
         if(!bounds.contains(p)) return;
+
+        uint8_t current_palette = driver.get_local_palette_index();
 
         RGB888 *driver_palette = driver.get_palette(current_palette);
         RGB palette[palette_size];

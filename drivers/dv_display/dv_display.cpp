@@ -221,8 +221,16 @@ namespace pimoroni {
     i2c->read_bytes(I2C_ADDR, I2C_REG_EDID, edid, 128);
   }
 
-  void DVDisplay::set_palette_index(uint8_t idx) {
+  void DVDisplay::set_display_palette_index(uint8_t idx) {
     i2c->reg_write_uint8(I2C_ADDR, I2C_REG_PALETTE_INDEX, idx);
+  }
+
+  void DVDisplay::set_local_palette_index(uint8_t idx) {
+    current_palette = idx;
+  }
+
+  uint8_t DVDisplay::get_local_palette_index() {
+    return current_palette;
   }
 
   void DVDisplay::write(uint32_t address, size_t len, const uint16_t colour)
@@ -382,7 +390,17 @@ namespace pimoroni {
     palette_entry[2] = colour & 0xFF;
     rewrite_palette = 2;
   }
-  
+
+  void DVDisplay::set_palette(RGB888 new_palette[PALETTE_SIZE])
+  {
+    set_palette(new_palette, current_palette);
+  }
+
+  void DVDisplay::set_palette_colour(uint8_t entry, RGB888 colour)
+  {
+    set_palette_colour(entry, colour, current_palette);
+  }
+
   void DVDisplay::write_palette()
   {
     uint addr = (display_height + 7) * 4;

@@ -20,6 +20,9 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_update_pen_obj, 5, 5, ModPic
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_reset_pen_obj, ModPicoGraphics_reset_pen);
 MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_set_palette_obj, 2, ModPicoGraphics_set_palette);
 
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_remote_palette_obj, ModPicoGraphics_set_remote_palette);
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_local_palette_obj, ModPicoGraphics_set_local_palette);
+
 // Pen
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_pen_obj, ModPicoGraphics_set_pen);
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_create_pen_obj, 4, 4, ModPicoGraphics_create_pen);
@@ -88,6 +91,8 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update_pen), MP_ROM_PTR(&ModPicoGraphics_update_pen_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset_pen), MP_ROM_PTR(&ModPicoGraphics_reset_pen_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_palette), MP_ROM_PTR(&ModPicoGraphics_set_palette_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_remote_palette), MP_ROM_PTR(&ModPicoGraphics_set_remote_palette_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_local_palette), MP_ROM_PTR(&ModPicoGraphics_set_local_palette_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_get_bounds), MP_ROM_PTR(&ModPicoGraphics_get_bounds_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_font), MP_ROM_PTR(&ModPicoGraphics_set_font_obj) },
