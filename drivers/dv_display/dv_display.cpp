@@ -7,11 +7,18 @@
 #include <string.h>
 #ifndef MICROPY_BUILD_TYPE
 #define mp_printf(_, ...) printf(__VA_ARGS__);
+#define my_thread_yield()
 #else
 extern "C" {
 #include "py/runtime.h"
+
+// Must be a C function
+static void my_thread_yield() {
+  MICROPY_EVENT_POLL_HOOK
+}
 }
 #endif
+
 
 namespace pimoroni {
 
@@ -118,6 +125,11 @@ namespace pimoroni {
     ram.wait_for_finish_blocking();
     while (gpio_get(VSYNC) == 0);
     gpio_put(RAM_SEL, bank);
+
+    // Yield the thread now the time sensitive wait is over
+    // TODO: Better sleep, and use an interrupt handler
+    my_thread_yield();
+
     if (rewrite_header) {
       set_scroll_idx_for_lines(-1, 0, display_height);
       rewrite_header = false;

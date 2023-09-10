@@ -1,6 +1,10 @@
 #include "pico/stdlib.h"
 #include "stdio.h"
+
+#ifndef NO_QSTR
 #include "swd.pio.h"
+#endif
+
 #include <algorithm>
 #ifndef MICROPY_BUILD_TYPE
 #define mp_printf(_, ...) printf(__VA_ARGS__);
