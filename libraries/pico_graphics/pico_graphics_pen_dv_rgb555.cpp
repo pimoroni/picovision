@@ -61,6 +61,7 @@ namespace pimoroni {
 
         const Rect bounds = src_bounds.intersection(clip);
         if (bounds.w <= 0 || bounds.h <= 0) return true;
+        alpha_data += bounds.x - src_bounds.x + stride * (bounds.y - src_bounds.y);
         
         // Double buffering - in the main loop one buffer is being written to the PSRAM or read into 
         // in the background while the other is processed
