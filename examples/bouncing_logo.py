@@ -6,9 +6,8 @@ from machine import Pin
 
 """
 Pimoroni logo bouncing around on the screen
-Goal: To load and display images on an external HDMI screen
-Please upload the image to the pico 
-Multiple logos can be added to the screen
+Please upload the pim-logo.png to the pico 
+Multiple logos (maximum of 4) can be added to the screen
 Press Y to add logo images to the screen
 """
 
@@ -23,11 +22,9 @@ DROP_SHADOW_OFFSET = 5
 TEXT_SCALE = 10
 
 # image indices
-LOGOSUB1_INDEX = 1
-LOGOSUB2_INDEX = 2
-LOGOSUB3_INDEX = 3
-LOGOSUB4_INDEX = 4
+LOGOSUB = []
 SUB_IMAGE_SIZE = 32
+
 
 MAX_SPRITE_SLOTS = 16
 MAX_LOGOS = MAX_SPRITE_SLOTS // 4
@@ -40,12 +37,9 @@ has_sprite = False  # set if the sprite file exists in the pico
 try:
     # load the sprites
     # Given that the png image is 64 by 64 pixels it is split to 4 portions of 32 by 32 pixels
-    # This is done by providing a 4 tuple as third argument as (x_offset, y_offset, portion_width, portion_height)
+    # This is done by providing a 2 tuple as third argument as (portion_width, portion_height)
     for _ in range(2):
-        display.load_sprite("pim-logo.png", LOGOSUB1_INDEX, (0, 0, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
-        display.load_sprite("pim-logo.png", LOGOSUB2_INDEX, (32, 0, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
-        display.load_sprite("pim-logo.png", LOGOSUB3_INDEX, (0, 32, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
-        display.load_sprite("pim-logo.png", LOGOSUB4_INDEX, (32, 32, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
+        LOGOSUB = display.load_animation(0, "pim-logo.png", (SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
         display.update()
 
     has_sprite = True
@@ -55,7 +49,6 @@ except OSError as ioe:
     has_sprite = False
 
 logos = []
-logos_count = 0
 
 # specify image dimensions and randomise starting position
 IMAGE_WIDTH = 64
@@ -85,23 +78,26 @@ class Logo:
         logo_num = logo_id + 1
         if has_sprite:
             display.display_sprite(
-                ((logo_num * 4) - 3), LOGOSUB1_INDEX, self.x_start, self.y_start
+                ((logo_num * 4) - 3),  # Sprite slot
+                LOGOSUB[0],            # Image index
+                self.x_start,          # X position
+                self.y_start	       # Y position
             )
             display.display_sprite(
-                ((logo_num * 4) - 2),	# Sprite slot
-                LOGOSUB2_INDEX,  # Image index
-                self.x_start + SUB_IMAGE_SIZE,	# x position
-                self.y_start,	# y position
+                ((logo_num * 4) - 2),
+                LOGOSUB[1],
+                self.x_start + SUB_IMAGE_SIZE,
+                self.y_start,
             )
             display.display_sprite(
                 ((logo_num * 4) - 1),
-                LOGOSUB3_INDEX,
+                LOGOSUB[2],
                 self.x_start,
                 self.y_start + SUB_IMAGE_SIZE,
             )
             display.display_sprite(
                 (logo_num * 4),
-                LOGOSUB4_INDEX,
+                LOGOSUB[3],
                 self.x_start + SUB_IMAGE_SIZE,
                 self.y_start + SUB_IMAGE_SIZE,
             )
@@ -140,7 +136,7 @@ offset = DEFAULT_VELOCITY
 
 def object_collision(j):
     """Checks if a given logo collides with other logos on the screen"""
-    for i in range(j+1, logos_count): # compares the logo with succeeding logos in the list
+    for i in range(j+1, len(logos)): # compares the logo with succeeding logos in the list
 
         # right collision
         if abs(logos[i].x_start - logos[j].x_end) < offset \
@@ -176,11 +172,11 @@ def object_collision(j):
 
 
 def add_logo():
-    global logos_count
-    new_logo = Logo()
-    logos.append(new_logo)
-
-    logos_count += 1
+    if len(logos) < MAX_LOGOS:
+        new_logo = Logo()
+        logos.append(new_logo)
+    else:
+        print("Unable to add more logos as the maximum amount has been reached")
 
 
 def draw_background():
@@ -206,9 +202,9 @@ while True:
 
     # add logo when Y button is pressed
     if current_time - last_time > 500:
-        if not y_btn.value() and logos_count < MAX_LOGOS:
+        if not y_btn.value():
             add_logo()
-            print(logos_count)
+            
         last_time = current_time
 
     draw_background()
@@ -232,13 +228,13 @@ while True:
     )
     
     # Check for edge and object collisions which updates the velocity accordingly
-    for num in range(logos_count):
+    for num in range(len(logos)):
         logo = logos[num]
         edge_collision(logo)
         object_collision(num)
 
     # update positions for each logo and display it
-    for num in range(logos_count):
+    for num in range(len(logos)):
         logo = logos[num]
         logo.x_start += logo.x_vel
         logo.y_start += logo.y_vel
