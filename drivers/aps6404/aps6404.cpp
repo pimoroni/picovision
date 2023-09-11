@@ -5,7 +5,11 @@
 #include "hardware/sync.h"
 #include "hardware/clocks.h"
 #include "pico/stdlib.h"
+
+#ifndef NO_QSTR
 #include "aps6404.pio.h"
+#endif
+
 #ifndef MICROPY_BUILD_TYPE
 #define mp_printf(_, ...) printf(__VA_ARGS__);
 #else
