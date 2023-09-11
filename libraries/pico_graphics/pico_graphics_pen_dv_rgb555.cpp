@@ -108,7 +108,7 @@ namespace pimoroni {
                 }
 
                 // Halfway through processing this row switch from writing previous row to reading the next
-                if (x == (int32_t)row_len_in_words && y+1 < bounds.h) {
+                if (x+1 == (int32_t)row_len_in_words && y+1 < bounds.h) {
                     driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
                 }
             }
