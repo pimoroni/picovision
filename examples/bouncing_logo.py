@@ -42,10 +42,10 @@ try:
     # Given that the png image is 64 by 64 pixels it is split to 4 portions of 32 by 32 pixels
     # This is done by providing a 4 tuple as third argument as (x_offset, y_offset, portion_width, portion_height)
     for _ in range(2):
-        display.load_sprite("pim-logo.png", LOGOSUB1_INDEX, (0, 0, 32, 32))
-        display.load_sprite("pim-logo.png", LOGOSUB2_INDEX, (32, 0, 32, 32))
-        display.load_sprite("pim-logo.png", LOGOSUB3_INDEX, (0, 32, 32, 32))
-        display.load_sprite("pim-logo.png", LOGOSUB4_INDEX, (32, 32, 32, 32))
+        display.load_sprite("pim-logo.png", LOGOSUB1_INDEX, (0, 0, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
+        display.load_sprite("pim-logo.png", LOGOSUB2_INDEX, (32, 0, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
+        display.load_sprite("pim-logo.png", LOGOSUB3_INDEX, (0, 32, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
+        display.load_sprite("pim-logo.png", LOGOSUB4_INDEX, (32, 32, SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
         display.update()
 
     has_sprite = True
