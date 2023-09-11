@@ -35,6 +35,7 @@ namespace pimoroni {
         if(pen != -1) color = pen;
     }
     int PicoGraphics_PenDV_P5::update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b) {
+        uint8_t current_palette = driver.get_local_palette_index();
         i &= 0x1f;
         used[current_palette][i] = true;
         cache_built = false;
@@ -99,12 +100,13 @@ namespace pimoroni {
             palette[i] = RGB((uint)driver_palette[i]);
         }
 
-        if(!cache_built) {
+        if(!cache_built || current_palette != cached_palette) {
             for(uint i = 0; i < 512; i++) {
                 RGB cache_col((i & 0x1C0) >> 1, (i & 0x38) << 2, (i & 0x7) << 5);
                 get_dither_candidates(cache_col, palette, palette_size, candidate_cache[i]);
             }
             cache_built = true;
+            cached_palette = current_palette;
         }
 
         uint cache_key = ((c.r & 0xE0) << 1) | ((c.g & 0xE0) >> 2) | ((c.b & 0xE0) >> 5);

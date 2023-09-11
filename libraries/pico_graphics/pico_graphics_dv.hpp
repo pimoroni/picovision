@@ -50,11 +50,11 @@ namespace pimoroni {
       uint8_t color;
       DVDisplay &driver;
       bool used[2][palette_size];
-      int current_palette = 0;
 
       std::array<std::array<uint8_t, 16>, 512> candidate_cache;
-      bool cache_built = false;
       std::array<uint8_t, 16> candidates;
+      bool cache_built = false;
+      uint8_t cached_palette = 0;
 
       PicoGraphics_PenDV_P5(uint16_t width, uint16_t height, DVDisplay &dv_display);
       void set_pen(uint c) override;
