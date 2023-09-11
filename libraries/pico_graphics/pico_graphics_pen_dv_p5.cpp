@@ -94,13 +94,13 @@ namespace pimoroni {
 
         uint8_t current_palette = driver.get_local_palette_index();
 
-        RGB888 *driver_palette = driver.get_palette(current_palette);
-        RGB palette[palette_size];
-        for(auto i = 0u; i < palette_size; i++) {
-            palette[i] = RGB((uint)driver_palette[i]);
-        }
-
         if(!cache_built || current_palette != cached_palette) {
+            RGB888 *driver_palette = driver.get_palette(current_palette);
+            RGB palette[palette_size];
+            for(auto i = 0u; i < palette_size; i++) {
+                palette[i] = RGB((uint)driver_palette[i]);
+            }
+
             for(uint i = 0; i < 512; i++) {
                 RGB cache_col((i & 0x1C0) >> 1, (i & 0x38) << 2, (i & 0x7) << 5);
                 get_dither_candidates(cache_col, palette, palette_size, candidate_cache[i]);
