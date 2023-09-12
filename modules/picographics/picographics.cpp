@@ -177,6 +177,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     self = m_new_obj_with_finaliser(ModPicoGraphics_obj_t);
     self->base.type = &ModPicoGraphics_type;
 
+    bool status = false;
     int width = args[ARG_width].u_int;
     int height = args[ARG_height].u_int;
     int frame_width = args[ARG_frame_width].u_int == -1 ? width : args[ARG_frame_width].u_int;
@@ -187,21 +188,22 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     switch((PicoGraphicsPenType)pen_type) {
         case PEN_DV_RGB888:
             self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, frame_width, frame_height, dv_display);
-            dv_display.init(width, height, DVDisplay::MODE_RGB888, frame_width, frame_height);
-            dv_display.set_mode(DVDisplay::MODE_RGB888);
+            status = dv_display.init(width, height, DVDisplay::MODE_RGB888, frame_width, frame_height);
             break;
         case PEN_DV_RGB555:
             self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, frame_width, frame_height, dv_display);
-            dv_display.init(width, height, DVDisplay::MODE_RGB555, frame_width, frame_height);
-            dv_display.set_mode(DVDisplay::MODE_RGB555);
+            status = dv_display.init(width, height, DVDisplay::MODE_RGB555, frame_width, frame_height);
             break;
         case PEN_DV_P5:
             self->graphics = m_new_class(PicoGraphics_PenDV_P5, frame_width, frame_height, dv_display);
-            dv_display.init(width, height, DVDisplay::MODE_PALETTE, frame_width, frame_height);
-            dv_display.set_mode(DVDisplay::MODE_PALETTE);
+            status = dv_display.init(width, height, DVDisplay::MODE_PALETTE, frame_width, frame_height);
             break;
         default:
             break;
+    }
+
+    if (!status) {
+        mp_raise_msg(&mp_type_RuntimeError, "PicoGraphics: Unsupported Mode!");
     }
 
     self->display = &dv_display;
@@ -214,6 +216,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     }
 
     return MP_OBJ_FROM_PTR(self);
+
 }
 
 mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {

@@ -9,6 +9,9 @@
 #include "drivers/aps6404/aps6404.hpp"
 #include "libraries/pico_graphics/pico_graphics.hpp"
 
+#ifndef SUPPORT_WIDE_MODES
+#define SUPPORT_WIDE_MODES 1
+#endif
 
 // Pimoroni DV Stick
 
@@ -24,6 +27,21 @@ namespace pimoroni {
       MODE_PALETTE = 2,
       MODE_RGB555 = 1,
       MODE_RGB888 = 3,
+    };
+
+    enum Resolution : uint8_t {
+        RESOLUTION_640x480 = 0,
+        RESOLUTION_720x480 = 1,
+        RESOLUTION_720x400 = 2,
+        RESOLUTION_720x576 = 3,
+
+        // These modes require the wide mode build
+        RESOLUTION_800x600 = 0x10,
+        RESOLUTION_800x480 = 0x11,
+        RESOLUTION_800x450 = 0x12,
+        RESOLUTION_960x540 = 0x13,
+        RESOLUTION_960x540_50 = 0x14,
+        RESOLUTION_1280x720 = 0x15,
     };
 
     enum SpriteBlendMode : uint8_t {
@@ -144,7 +162,7 @@ namespace pimoroni {
       void write_pixel(const Point &p, RGB888 colour);
       void write_pixel_span(const Point &p, uint l, RGB888 colour);
 
-      void init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
+      bool init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
       void flip();
       void reset();
 

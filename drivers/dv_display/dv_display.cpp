@@ -22,10 +22,9 @@ static void my_thread_yield() {
 
 namespace pimoroni {
 
-  void DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
+  bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
     display_width = display_width_;
     display_height = display_height_;
-    mode = mode_;
 
     if (frame_width_ == 0) frame_width = display_width_;
     else frame_width = frame_width_;
@@ -51,27 +50,31 @@ namespace pimoroni {
     }
 
     if (full_width == 640) {
-      res_mode = 0;
+      res_mode = RESOLUTION_640x480;
     }
-    else if (full_width == 720) {
-      if (full_height == 480) res_mode = 1;
-      else if (full_height == 400) res_mode = 2;
-      else if (full_height == 576) res_mode = 3;
+    else if (full_width == 720 && mode_ != MODE_RGB888 ) {
+      if (full_height == 480) res_mode = RESOLUTION_720x480;
+      else if (full_height == 400) res_mode = RESOLUTION_720x400;
+      else if (full_height == 576) res_mode = RESOLUTION_720x576;
     }
+#if SUPPORT_WIDE_MODES
+    // Modes below require the widescreen build
     else if (full_width == 800) {
-      if (full_height == 600) res_mode = 0x10;
-      else if (full_height == 480) res_mode = 0x11;
-      else if (full_height == 450) res_mode = 0x12;
+      if (full_height == 600) res_mode = RESOLUTION_800x600;
+      else if (full_height == 480) res_mode = RESOLUTION_800x480;
+      else if (full_height == 450) res_mode = RESOLUTION_800x450;
     }
     else if (full_width == 960) {
-      if (full_height == 540) res_mode = 0x14;
+      if (full_height == 540) res_mode = RESOLUTION_960x540_50;
     }
     else if (full_width == 1280) {
-      if (full_height == 720) res_mode = 0x15;
+      if (full_height == 720) res_mode = RESOLUTION_1280x720;
     }
+#endif
 
     if (res_mode == 0xFF) {
-      mp_printf(&mp_plat_print, "Resolution %dx%d is not supported.  Will use 720x480.\n", display_width, display_height);
+      // Resolution is unsupported
+      return false;
     }
 
     gpio_init(RAM_SEL);
@@ -107,6 +110,10 @@ namespace pimoroni {
 
     i2c->reg_write_uint8(I2C_ADDR, I2C_REG_START, 1);
     mp_printf(&mp_plat_print, "Started\n");
+
+    set_mode(mode_);
+
+    return true;
   }
   
   void DVDisplay::flip() {
