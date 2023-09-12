@@ -15,9 +15,10 @@
 namespace pimoroni {
 
   // This is ARGB1555 only for now
-  class DVDisplay : public IDirectDisplayDriver<uint16_t>, public IDirectDisplayDriver<RGB888>, public IPaletteDisplayDriver {
+  class DVDisplay {
   public:
     static constexpr int PALETTE_SIZE = 32;
+    static constexpr int NUM_PALETTES = 2;
 
     enum Mode {
       MODE_PALETTE = 2,
@@ -50,6 +51,7 @@ namespace pimoroni {
     static constexpr uint I2C_REG_GPIO_HI_PULL_UP = 0xCB;
     static constexpr uint I2C_REG_GPIO_HI_PULL_DOWN = 0xCC;
     static constexpr uint I2C_REG_EDID = 0xED;
+    static constexpr uint I2C_REG_PALETTE_INDEX = 0xEE;
     static constexpr uint I2C_REG_SCROLL_BASE = 0xF0;
 
     //--------------------------------------------------
@@ -133,14 +135,14 @@ namespace pimoroni {
       }
       
       // 16bpp interface
-      void write_pixel(const Point &p, uint16_t colour) override;
-      void write_pixel_span(const Point &p, uint l, uint16_t colour) override;
+      void write_pixel(const Point &p, uint16_t colour);
+      void write_pixel_span(const Point &p, uint l, uint16_t colour);
       void write_pixel_span(const Point &p, uint l, uint16_t *data);
-      void read_pixel_span(const Point &p, uint l, uint16_t *data) override;
+      void read_pixel_span(const Point &p, uint l, uint16_t *data);
 
       // 24bpp interface
-      void write_pixel(const Point &p, RGB888 colour) override;
-      void write_pixel_span(const Point &p, uint l, RGB888 colour) override;
+      void write_pixel(const Point &p, RGB888 colour);
+      void write_pixel_span(const Point &p, uint l, RGB888 colour);
 
       void init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
       void flip();
@@ -168,9 +170,16 @@ namespace pimoroni {
       // 32 colour palette mode.  Note that palette entries range from 0-31,
       // but when writing colour values the palette entry is in bits 6-2, so the
       // entry value is effectively multiplied by 4.
+      // The palette idx 
       void set_mode(Mode new_mode);
+      void set_palette(RGB888 palette[PALETTE_SIZE], int palette_idx = 0);
       void set_palette(RGB888 palette[PALETTE_SIZE]);
+      void set_palette_colour(uint8_t entry, RGB888 colour, int palette_idx);
       void set_palette_colour(uint8_t entry, RGB888 colour);
+      void set_display_palette_index(uint8_t idx);
+      void set_local_palette_index(uint8_t idx);
+      uint8_t get_local_palette_index();
+      RGB888* get_palette(uint8_t idx = 0);
 
       void write_palette_pixel(const Point &p, uint8_t colour);
       void write_palette_pixel_span(const Point &p, uint l, uint8_t colour);
@@ -208,9 +217,19 @@ namespace pimoroni {
       // The supplied buffer must be at least 128 bytes long
       void get_edid(uint8_t* edid);
 
+      // Raw access to frame buffer
+      uint32_t point_to_address(const Point& p) const;
+      int pixel_size() const;
+      int frame_row_stride() const { return (int)frame_width * 6; }
+      void raw_read_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.read(address, data, len_in_words); }
+      void raw_write_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.write(address, data, len_in_words << 2); }
+      void raw_wait_for_finish_blocking() { ram.wait_for_finish_blocking(); }
+
     protected:
-      uint8_t palette[PALETTE_SIZE * 3] alignas(4);
+      uint8_t palette[NUM_PALETTES * PALETTE_SIZE * 3] alignas(4);
       bool rewrite_header = false;
+      uint8_t rewrite_palette = 0;
+      uint8_t current_palette = 0;
 
       virtual void write_palette();
       virtual void write_header();
@@ -232,9 +251,6 @@ namespace pimoroni {
       void write(uint32_t address, size_t len, const RGB888 colour);
 
       void define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data, uint32_t bytes_per_pixel);
-
-      uint32_t point_to_address(const Point& p) const;
-      int pixel_size() const;
 
       uint32_t point_to_address16(const Point &p) const {
         return base_address + ((p.y * (uint32_t)frame_width * 3) + p.x) * 2;

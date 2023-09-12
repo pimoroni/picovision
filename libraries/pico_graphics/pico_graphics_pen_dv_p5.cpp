@@ -2,45 +2,54 @@
 
 namespace pimoroni {
 
-    PicoGraphics_PenDV_P5::PicoGraphics_PenDV_P5(uint16_t width, uint16_t height, IPaletteDisplayDriver &palette_display_driver)
+    inline constexpr uint32_t RGB_to_RGB888(const uint8_t r, const uint8_t g, const uint8_t b) {
+        return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+    }
+
+    PicoGraphics_PenDV_P5::PicoGraphics_PenDV_P5(uint16_t width, uint16_t height, DVDisplay &dv_display)
     : PicoGraphics(width, height, nullptr),
-      driver(palette_display_driver)
+      driver(dv_display)
       {
         this->pen_type = PEN_DV_P5;
         for(auto i = 0u; i < palette_size; i++) {
-            palette[i] = {
-                uint8_t(i << 3),
-                uint8_t(i << 3),
-                uint8_t(i << 3)
-            };
-            driver.set_palette_colour(i, palette[i].to_rgb888());
-            used[i] = false;
+            driver.set_palette_colour(i, RGB_to_RGB888(i, i, i) << 3, 0);
+            used[0][i] = false;
+            int n = palette_size - i;
+            driver.set_palette_colour(i, RGB_to_RGB888(n, n, n) << 3, 1);
+            used[1][i] = false;
         }
         cache_built = false;
     }
     void PicoGraphics_PenDV_P5::set_pen(uint c) {
         color = c & 0x1f;
-        }
+    }
     void PicoGraphics_PenDV_P5::set_pen(uint8_t r, uint8_t g, uint8_t b) {
+        uint8_t current_palette = driver.get_local_palette_index();
+        RGB888 *driver_palette = driver.get_palette(current_palette);
+        RGB palette[palette_size];
+        for(auto i = 0u; i < palette_size; i++) {
+            palette[i] = RGB((uint)driver_palette[i]);
+        }
+
         int pen = RGB(r, g, b).closest(palette, palette_size);
         if(pen != -1) color = pen;
     }
     int PicoGraphics_PenDV_P5::update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b) {
+        uint8_t current_palette = driver.get_local_palette_index();
         i &= 0x1f;
-        used[i] = true;
-        palette[i] = {r, g, b};
+        used[current_palette][i] = true;
         cache_built = false;
-        driver.set_palette_colour(i, palette[i].to_rgb888());
+        driver.set_palette_colour(i, RGB_to_RGB888(r, g, b));
         return i;
     }
     int PicoGraphics_PenDV_P5::create_pen(uint8_t r, uint8_t g, uint8_t b) {
+        uint8_t current_palette = driver.get_local_palette_index();
         // Create a colour and place it in the palette if there's space
         for(auto i = 0u; i < palette_size; i++) {
-            if(!used[i]) {
-                palette[i] = {r, g, b};
-                used[i] = true;
+            if(!used[current_palette][i]) {
+                used[current_palette][i] = true;
                 cache_built = false;
-                driver.set_palette_colour(i, palette[i].to_rgb888());
+                driver.set_palette_colour(i, RGB_to_RGB888(r, g, b));
                 return i;
             }
         }
@@ -51,8 +60,9 @@ namespace pimoroni {
         return create_pen(p.r, p.g, p.b);
     }
     int PicoGraphics_PenDV_P5::reset_pen(uint8_t i) {
-        palette[i] = {0, 0, 0};
-        used[i] = false;
+        uint8_t current_palette = driver.get_local_palette_index();
+        driver.set_palette_colour(i, 0);
+        used[current_palette][i] = false;
         cache_built = false;
         return i;
     }
@@ -82,28 +92,29 @@ namespace pimoroni {
     void PicoGraphics_PenDV_P5::set_pixel_dither(const Point &p, const RGB &c) {
         if(!bounds.contains(p)) return;
 
-        uint used_palette_entries = 0;
-        for(auto i = 0u; i < palette_size; i++) {
-            if(!used[i]) break;
-            used_palette_entries++;
-        }
+        uint8_t current_palette = driver.get_local_palette_index();
 
-        if(!cache_built) {
+        if(!cache_built || current_palette != cached_palette) {
+            RGB888 *driver_palette = driver.get_palette(current_palette);
+            RGB palette[palette_size];
+            for(auto i = 0u; i < palette_size; i++) {
+                palette[i] = RGB((uint)driver_palette[i]);
+            }
+
             for(uint i = 0; i < 512; i++) {
                 RGB cache_col((i & 0x1C0) >> 1, (i & 0x38) << 2, (i & 0x7) << 5);
-                get_dither_candidates(cache_col, palette, used_palette_entries, candidate_cache[i]);
+                get_dither_candidates(cache_col, palette, palette_size, candidate_cache[i]);
             }
             cache_built = true;
+            cached_palette = current_palette;
         }
 
         uint cache_key = ((c.r & 0xE0) << 1) | ((c.g & 0xE0) >> 2) | ((c.b & 0xE0) >> 5);
-        //get_dither_candidates(c, palette, 256, candidates);
 
         // find the pattern coordinate offset
         uint pattern_index = (p.x & 0b11) | ((p.y & 0b11) << 2);
 
         // set the pixel
-        //color = candidates[pattern[pattern_index]];
         color = candidate_cache[cache_key][dither16_pattern[pattern_index]];
         set_pixel(p);
     }

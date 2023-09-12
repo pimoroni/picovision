@@ -1,4 +1,5 @@
 import time
+import struct
 import pngdec
 from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_P5 as PEN
 
@@ -19,49 +20,60 @@ TILES_Y = int(DISPLAY_HEIGHT / TILE_H) - 3  # Two rows for the top status bar, o
 SPRITE_W = 16
 SPRITE_H = 16
 
+FIRE_FRAMES = 5
+
+# Palette Colours - Full Colour
+PALETTE_COLOUR = [
+    (0xff, 0xff, 0xff),
+    (0x2f, 0x2c, 0x1e),
+    (0xff, 0x00, 0x29),
+    (0x41, 0x3d, 0x2e),
+    (0x50, 0x4a, 0x30),
+    (0x15, 0x68, 0x06),
+    (0x12, 0x75, 0x00),
+    (0x7f, 0x68, 0x03),
+    (0x1a, 0x88, 0x05),
+    (0x00, 0xbf, 0x00),
+    (0x8b, 0x8b, 0x8b),
+    (0xbf, 0x9c, 0x00),
+    (0x06, 0xdc, 0x06),
+    (0xdc, 0xb4, 0x06),
+    (0xff, 0xff, 0xff),
+    (0x3b, 0x32, 0x1d)
+]
+
+BLACK = (0x3b, 0x32, 0x1d)
+WHITE = (0xcb, 0xc2, 0xad)
+
+# Palette Colours - 1bit
+PALETTE_1BIT = [
+    BLACK,
+    WHITE,  # Platform lower
+    WHITE,  # Full Fire
+    WHITE,  # Platform middle
+    BLACK,  #
+    WHITE,  # Ladder right
+    BLACK,  #
+    BLACK,  # Snake 2 shadow
+    WHITE,  # Ladder Left
+    WHITE,  # Snake 1 body
+    WHITE,  # Snake Fangs
+    WHITE,  # Snake 2 Body
+    BLACK,
+    BLACK,  # Yellow Fire
+    BLACK,
+    BLACK
+]
+
 display = PicoGraphics(DISPLAY_PICOVISION, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, frame_width=DISPLAY_WIDTH * FRAME_SCALE_X, frame_height=DISPLAY_HEIGHT * FRAME_SCALE_Y, pen_type=PEN)
 png = pngdec.PNG(display)
 
+display.set_local_palette(0)
+display.set_palette(PALETTE_COLOUR)
+display.set_local_palette(1)
+display.set_palette(PALETTE_1BIT)
 
-"""
-# Palette Colours - 1bit mode
-display.create_pen(0x00, 0x00, 0x00)
-display.create_pen(0xff, 0xff, 0xff)  #   Platform lower
-display.create_pen(0x00, 0x00, 0x00)
-display.create_pen(0xff, 0xff, 0xff)  #   Platform middle
-display.create_pen(0x00, 0x00, 0x00)  #
-display.create_pen(0xff, 0xff, 0xff)  #   Ladder right
-display.create_pen(0x00, 0x00, 0x00)  #
-display.create_pen(0xff, 0xff, 0xff)  #   Snake 2 shadow
-display.create_pen(0xff, 0xff, 0xff)  #   Ladder Left
-display.create_pen(0xff, 0xff, 0xff)  #   Snake 1 body
-display.create_pen(0xff, 0xff, 0xff)  #   Snake Fangs
-display.create_pen(0xff, 0xff, 0xff)  #   Snake 2 Body
-display.create_pen(0x00, 0x00, 0x00)
-display.create_pen(0xff, 0xff, 0xff)
-
-BG = display.create_pen(0x00, 0x00, 0x00)
-
-"""
-
-# Palette Colours - Full Colour
-display.create_pen(0xff, 0xff, 0xff)
-display.create_pen(0x2f, 0x2c, 0x1e)
-display.create_pen(0xff, 0x00, 0x29)
-display.create_pen(0x41, 0x3d, 0x2e)
-display.create_pen(0x50, 0x4a, 0x30)
-display.create_pen(0x15, 0x68, 0x06)
-display.create_pen(0x12, 0x75, 0x00)
-display.create_pen(0x7f, 0x68, 0x03)
-display.create_pen(0x1a, 0x88, 0x05)
-display.create_pen(0x00, 0xbf, 0x00)
-display.create_pen(0x8b, 0x8b, 0x8b)
-display.create_pen(0xbf, 0x9c, 0x00)
-display.create_pen(0x06, 0xdc, 0x06)
-display.create_pen(0xdc, 0xb4, 0x06)
-display.create_pen(0xff, 0xff, 0xff)
-
-BG = display.create_pen(0x3b, 0x32, 0x1d)
+BG = len(PALETTE_COLOUR) - 1
 
 level_data = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -86,70 +98,25 @@ for row in level_data:
     level_data_bytes += bytes([n + 5 if n > 0 else n for n in row])
 
 
-class SpriteData:
-    MAX_SPRITE_DATA_SLOTS = 32
+# A basic wrapper around loading tile data from PNG and caching it to .bin
+def cached_png(filename, source=None):
+    cache = filename[:-4]  # strip .png
+    if source is not None:
+        x, y, w, h = source
+        cache = f"{cache}-{x}-{y}-{w}-{h}"
+    cache += ".bin"
 
-    def __init__(self):
-        self.files = [None for _ in range(self.MAX_SPRITE_DATA_SLOTS)]
-        self.crops = [None for _ in range(self.MAX_SPRITE_DATA_SLOTS)]
+    try:
+        with open(cache, "rb") as f:
+            width, height = struct.unpack("HH", f.read(4))
+            data = f.read()
+    except OSError:
+        width, height, data = display.load_sprite(filename, source=source)
 
-    def add(self, filename, crop):
-        slot = self.files.index(None)
-        self.files[slot] = filename
-        self.crops[slot] = crop
-        return slot
-
-    def load(self):
-        # Load sprites into each PSRAM buffer
-        for _ in range(2):
-            for index, filename in enumerate(self.files):
-                if filename is not None:
-                    crop = self.crops[index]
-                    if crop is not None:
-                        display.load_sprite(filename, index, crop)
-                    else:
-                        display.load_sprite(filename, index)
-            display.update()
-
-    def split(self, filename, bounds, sprite_size):
-        bx, by, bw, bh = bounds
-        sw, sh = sprite_size
-
-        sprites_x = int(bw / sw)
-        sprites_y = int(bh / sh)
-
-        indexes = []
-
-        for y in range(sprites_y):
-            for x in range(sprites_x):
-                i = self.add(filename, (bx + (x * sw), by + (y * sh), sw, sh))
-                indexes.append(i)
-
-        return indexes
-
-
-class TileData:
-    def __init__(self, filename, source=None, cache=None):
-        self._filename = filename
-        self._cache = cache
-        try:
-            x, y, w, h = source
-        except ValueError:
-            raise RuntimeError("TileData requires a source region.")
-        try:
-            self._data = open(self._cache, "rb").read()
-            self._width = w
-            self._height = h
-        except OSError:
-            self._width, self._height, self._data = display.load_sprite(filename, source=source)
-            if cache is not None:
-                open(self._cache, "wb").write(self._data)
-
-    def purge(self):
-        pass
-
-    def data(self):
-        return self._width, self._height, self._data
+        with open(cache, "wb") as f:
+            f.write(struct.pack("HH", width, height))
+            f.write(data)
+    return width, height, data
 
 
 class SpriteList:
@@ -201,79 +168,150 @@ class CollisionList:
             display.update()
 
 
-# Load the snake sprite data into the PSRAM
-snek_data = TileData("tiles.png", cache="snek_data.bin", source=(0, 64, 32, 80))
-print(snek_data.data())
-start_frame = 0
-end_frame = display.load_animation(start_frame, snek_data.data(), (16, 16))
+class Actor:
+    LEFT = True
+    RIGHT = False
 
-SNEK_A = list(range(start_frame, end_frame))[0::2]
-SNEK_B = list(range(start_frame, end_frame))[1::2]
+    def __init__(self, spritelist, x, y, frames_left, frames_right, ping_pong=False):
+        self.spritelist = spritelist
+        self.x = x
+        self.y = y
+        self.v_x = -1
+        self.v_y = 0
+        self.frames_left = frames_left
+        self.frames_right = frames_right
+
+        if ping_pong:
+            self.frames_left += reversed(frames_left[1:][:-1])
+            self.frames_right += reversed(frames_right[1:][:-1])
+
+        self.l_count = len(self.frames_left)
+        self.r_count = len(self.frames_right)
+
+        self.facing = self.LEFT
+
+    def update(self, level_data):
+        level_width = len(level_data[0]) * TILE_W
+
+        self.x += self.v_x
+        self.y += self.v_y
+
+        tile_x = int((self.x + 8) / TILE_W)
+        tile_y = int(self.y / TILE_H)
+
+        tile_below = level_data[tile_y + 1][tile_x]
+
+        if tile_below == 0 or self.x < 0 or (self.x + TILE_W) > level_width:
+            self.v_x *= -1
+            self.x += self.v_x
+            self.facing = self.LEFT if self.v_x < 0 else self.RIGHT
+
+    def draw(self, t, offset_x, offset_y):
+        if self.facing == self.LEFT:
+            frame = self.frames_left[t % self.l_count]
+        else:
+            frame = self.frames_right[t % self.r_count]
+        self.spritelist.add(frame, self.x + offset_x, self.y + offset_y)
 
 
-aaah_data = TileData("tiles.png", cache="aaah_data.bin", source=(48, 64, 16, 80))
-start_frame = end_frame
-end_frame = display.load_animation(start_frame, aaah_data.data(), (16, 16))
+def draw_level():
+    global SNEK_AL, SNEK_AR, SNEK_BL, SNEK_BR, AAAAHL, AAAAHR
 
-AAAAAH = list(range(start_frame, end_frame))
+    # Load the animation sheet into RAM, we're skipping the first 64 pixels because that's our tilesheet
+    animations = cached_png("tiles.png", source=(0, 64, 96, 80))
 
-spritelist = SpriteList()
+    animation_data_slot = 0
 
+    # Take a 16x80 slice of our animation sheet and cut it into 16x16 frames for our green snake
+    SNEK_AL = display.load_animation(animation_data_slot, animations, (TILE_W, TILE_H), source=(0, 0, 16, 80))
+    animation_data_slot = SNEK_AL[-1] + 1  # The next slot is the last frame in the sequence + 1
+    SNEK_AR = display.load_animation(animation_data_slot, animations, (TILE_W, TILE_H), source=(16, 0, 16, 80))
+    animation_data_slot = SNEK_AR[-1] + 1  # Ditto
 
-for _ in range(2):
-    display.set_scroll_index_for_lines(1, 0, DISPLAY_HEIGHT - 16)
-    display.set_scroll_index_for_lines(2, 0, DISPLAY_HEIGHT - 16)
+    # Take a 16x80 slice of our animation sheet and cut it into 16x16 frames for our yellow snake
+    SNEK_BL = display.load_animation(animation_data_slot, animations, (TILE_W, TILE_H), source=(32, 0, 16, 80))
+    animation_data_slot = SNEK_BL[-1] + 1  # Ditto
+    SNEK_BR = display.load_animation(animation_data_slot, animations, (TILE_W, TILE_H), source=(48, 0, 16, 80))
+    animation_data_slot = SNEK_BR[-1] + 1  # Ditto
+
+    # Take a 16x80 slice of our animation sheet and cut it into 16x16 frames for our player
+    AAAAHR = display.load_animation(animation_data_slot, animations, (TILE_W, TILE_H), source=(64, 0, 16, 80))
+    animation_data_slot = AAAAHR[-1] + 1  # Ditto
+    AAAAHL = display.load_animation(animation_data_slot, animations, (TILE_W, TILE_H), source=(80, 0, 16, 80))
+
+    # Everything but the fire
+    display.set_scroll_index_for_lines(1, 0, DISPLAY_HEIGHT - TILE_H)
+    display.set_scroll_index_for_lines(2, 0, DISPLAY_HEIGHT - TILE_H)
 
     # For scrolling the fire
-    display.set_scroll_index_for_lines(3, DISPLAY_HEIGHT - 16, DISPLAY_HEIGHT)
+    display.set_scroll_index_for_lines(3, DISPLAY_HEIGHT - TILE_H, DISPLAY_HEIGHT)
+
+    # This sequence is repeated horizontally
+    fire_tilemap = [0, 2, 1, 4, 3]
+
+    # Repeat the frame sequence, adding one to each frame and wrapping on FIRE_FRAMES
+    for x in range(FIRE_FRAMES + 4):
+        next_step = [(n + 1) % FIRE_FRAMES for n in fire_tilemap[-FIRE_FRAMES:]]
+        fire_tilemap += next_step
+
+    # Add 1 to each tile, since tiles are indexed 1-16 with 0 being no tile
+    fire_tilemap_bytes = bytes([n + 1 for n in fire_tilemap])
+
+    # Load our 64x64, 16 tile sheet
+    tiles = cached_png("tiles.png", source=(0, 0, 64, 64))
+
+    # Clear to background colour
+    display.set_pen(BG)
+    # Draw a rectangle, since a normal clear would clear the whole 4x wide display
+    display.rectangle(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT)
+    # And clear the bit that extends behind the animated fire
+    display.rectangle(0, DISPLAY_HEIGHT - TILE_H, len(fire_tilemap) * TILE_W, TILE_H)
+
+    # Draw the level data
+    display.tilemap(level_data_bytes, (0, 32, 20, 12), tiles)
+    display.tilemap(fire_tilemap_bytes, (0, DISPLAY_HEIGHT - TILE_H, len(fire_tilemap), 1), tiles)
 
     display.update()
 
 
-NUM_FRAMES = 5
+# Draw the level into both PSRAM buffers
+draw_level()
 
-# This sequence is repeated horizontally
-fire_tilemap = [0, 2, 1, 4, 3]
 
-# Repeat the frame sequence, adding one to each frame and wrappong on NUM_FRAMES
-for x in range(NUM_FRAMES + 4):
-    next_step = [(n + 1) % NUM_FRAMES for n in fire_tilemap[-NUM_FRAMES:]]
-    fire_tilemap += next_step
-
-# Add 1 to each tile, since tiles are indexed 1-16 with 0 being no tile
-fire_tilemap_bytes = bytes([n + 1 for n in fire_tilemap])
-
-# Load our 64x64, 16 tile sheet
-tiles = TileData("tiles.png", cache="tiles.bin", source=(0, 0, 64, 64))
-
-# Clear to background colour
-display.set_pen(BG)
-# Draw a rectangle, since a normal clear would clear the whole 4x wide display
-display.rectangle(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT)
-# And clear the bit that extends behind the animated fire
-display.rectangle(0, DISPLAY_HEIGHT - 16, len(fire_tilemap) * 16, 16)
-
-# Draw the level data
-display.tilemap(level_data_bytes, (0, 32, 20, 12), tiles.data())
-display.tilemap(fire_tilemap_bytes, (0, DISPLAY_HEIGHT - 16, len(fire_tilemap), 1), tiles.data())
-display.update()
-
+spritelist = SpriteList()
+player = Actor(spritelist, 5 * TILE_W, 2 * TILE_H, AAAAHL, AAAAHR, ping_pong=True)
+snake_a = Actor(spritelist, 2 * TILE_W, 2 * TILE_H, SNEK_AL, SNEK_AR)
+snake_b = Actor(spritelist, 4 * TILE_W, 6 * TILE_H, SNEK_BL, SNEK_BR)
+snake_c = Actor(spritelist, 2 * TILE_W, 8 * TILE_H, SNEK_AL, SNEK_AR)
+snake_d = Actor(spritelist, 16 * TILE_W, 8 * TILE_H, SNEK_BL, SNEK_BR)
 
 t_end = time.ticks_ms()
 print(f"Startup time: {t_end - t_start}ms")
 
+t_start = time.time()
 
 while True:
-    fire_x = int(time.ticks_ms() / 200) % NUM_FRAMES
-    fire_x *= SPRITE_W * NUM_FRAMES
+    pal = int((time.time() - t_start) / 5) % 2
+    display.set_remote_palette(pal)
+
+    fire_x = int(time.ticks_ms() / 200) % FIRE_FRAMES
+    fire_x *= SPRITE_W * FIRE_FRAMES
     display.set_display_offset(fire_x, 0, 3)
 
-    snek_frame = int(time.ticks_ms() / 250) % len(SNEK_A)
+    t = int(time.ticks_ms() / 250)
+
+    player.update(level_data)
+    snake_a.update(level_data)
+    snake_b.update(level_data)
+    snake_c.update(level_data)
+    snake_d.update(level_data)
 
     spritelist.clear()
-    spritelist.add(SNEK_A[snek_frame], 50 + 0, 64)
-    spritelist.add(SNEK_B[snek_frame], 50 + 16, 64)
-    spritelist.add(SNEK_A[snek_frame], 50 + 32, 64)
-    spritelist.add(SNEK_B[snek_frame], 50 + 48, 64)
-    spritelist.add(AAAAAH[snek_frame], 110, 64)
+    player.draw(t, 0, 32)
+    snake_a.draw(t, 0, 32)
+    snake_b.draw(t, 0, 32)
+    snake_c.draw(t, 0, 32)
+    snake_d.draw(t, 0, 32)
     spritelist.display()
+
+    time.sleep(1.0 / 30)

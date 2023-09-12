@@ -186,17 +186,17 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     // Create an instance of the graphics library and DV display driver
     switch((PicoGraphicsPenType)pen_type) {
         case PEN_DV_RGB888:
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, frame_width, frame_height, *(IDirectDisplayDriver<RGB888> *)&dv_display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, frame_width, frame_height, dv_display);
             dv_display.init(width, height, DVDisplay::MODE_RGB888, frame_width, frame_height);
             dv_display.set_mode(DVDisplay::MODE_RGB888);
             break;
         case PEN_DV_RGB555:
-            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, frame_width, frame_height, *(IDirectDisplayDriver<uint16_t> *)&dv_display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, frame_width, frame_height, dv_display);
             dv_display.init(width, height, DVDisplay::MODE_RGB555, frame_width, frame_height);
             dv_display.set_mode(DVDisplay::MODE_RGB555);
             break;
         case PEN_DV_P5:
-            self->graphics = m_new_class(PicoGraphics_PenDV_P5, frame_width, frame_height, *(IPaletteDisplayDriver *)&dv_display);
+            self->graphics = m_new_class(PicoGraphics_PenDV_P5, frame_width, frame_height, dv_display);
             dv_display.init(width, height, DVDisplay::MODE_PALETTE, frame_width, frame_height);
             dv_display.set_mode(DVDisplay::MODE_PALETTE);
             break;
@@ -263,7 +263,7 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_filename, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_index, MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_source, MP_ARG_OBJ, {.u_obj = nullptr} }
+        { MP_QSTR_source, MP_ARG_OBJ, {.u_obj = mp_const_none} }
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -407,13 +407,14 @@ mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp
 }
 
 mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_slot, ARG_data, ARG_frame_size };
+    enum { ARG_self, ARG_slot, ARG_data, ARG_frame_size, ARG_source };
 
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_slot, MP_ARG_REQUIRED | MP_ARG_INT },
         { MP_QSTR_data, MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_frame_size, MP_ARG_REQUIRED | MP_ARG_OBJ }
+        { MP_QSTR_frame_size, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_source, MP_ARG_OBJ, {.u_obj = mp_const_none} }
     };
 
     mp_buffer_info_t animation_data;
@@ -423,7 +424,8 @@ mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args,
 
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, ModPicoGraphics_obj_t);
 
-    int slot = args[ARG_slot].u_int;
+    int start_slot = args[ARG_slot].u_int;
+    int slot = start_slot;
 
     // Frame size
     mp_obj_tuple_t *tuple_frame_size = MP_OBJ_TO_PTR2(args[ARG_frame_size].u_obj, mp_obj_tuple_t);
@@ -434,27 +436,60 @@ mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args,
     int frame_h = mp_obj_get_int(tuple_frame_size->items[1]);
 
     // Animation data
-    mp_obj_tuple_t *tuple_frame_data = MP_OBJ_TO_PTR2(args[ARG_data].u_obj, mp_obj_tuple_t);
+    mp_obj_tuple_t *tuple_frame_data;
+    bool cropped = false;
+
+    // If the data supplied is a string, assume it's a filename and try to open it as a PNG
+    if(mp_obj_is_str(args[ARG_data].u_obj)) {
+        mp_obj_t pos_args[] = {
+            args[ARG_self].u_obj,
+            args[ARG_data].u_obj,
+            mp_obj_new_int(-1),
+            args[ARG_source].u_obj
+        };
+        tuple_frame_data = MP_OBJ_TO_PTR2(ModPicoGraphics_load_sprite(MP_ARRAY_SIZE(pos_args), &pos_args[0], (mp_map_t *)&mp_const_empty_map), mp_obj_tuple_t);
+        cropped = true;
+    } else {
+        tuple_frame_data = MP_OBJ_TO_PTR2(args[ARG_data].u_obj, mp_obj_tuple_t);
+    }
 
     if(tuple_frame_data->len != 3) mp_raise_ValueError("load_animation: data tuple must contain (w, h, data)");
 
     int tilesheet_w = mp_obj_get_int(tuple_frame_data->items[0]);
     int tilesheet_h = mp_obj_get_int(tuple_frame_data->items[1]);
+
+    int source_x = 0;
+    int source_y = 0;
+    int source_w = tilesheet_w;
+    int source_h = tilesheet_h;
+
+    // Ignore the source rect if we've already passed it to ModPicoGraphics_load_sprite
+    if(mp_obj_is_type(args[ARG_source].u_obj, &mp_type_tuple) && !cropped){
+        mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR2(args[ARG_source].u_obj, mp_obj_tuple_t);
+
+        if(tuple->len != 4) mp_raise_ValueError("load_animation: source tuple must contain (x, y, w, h)");
+
+        source_x = mp_obj_get_int(tuple->items[0]);
+        source_y = mp_obj_get_int(tuple->items[1]);
+        source_w = mp_obj_get_int(tuple->items[2]);
+        source_h = mp_obj_get_int(tuple->items[3]);
+    }
+
     mp_get_buffer_raise(tuple_frame_data->items[2], &animation_data, MP_BUFFER_READ);
 
-    int frames_x = tilesheet_w / frame_w;
-    int frames_y = tilesheet_h / frame_h;
+    int frames_x = source_w / frame_w;
+    int frames_y = source_h / frame_h;
 
     if(self->graphics->pen_type == PicoGraphics::PEN_DV_P5) {
 
         uint8_t *buf = m_new(uint8_t, frame_w * frame_h);
 
         for(auto y = 0; y < frames_y; y++) {
-            int o_y = y * frame_h * tilesheet_w;
+            int o_y = (source_y + y * frame_h) * tilesheet_w;
             for(auto x = 0; x < frames_x; x++) {
-                int o_x = x * frame_w;
+                int o_x = source_x + x * frame_w;
                 uint8_t *p = buf;
-                uint8_t *data = (uint8_t *)animation_data.buf; // Src
+                uint8_t *data = (uint8_t *)animation_data.buf;
                 data += o_x + o_y;
                 for(auto fy = 0; fy < frame_h; fy++) {
                     for(auto fx = 0; fx < frame_w; fx++) {
@@ -472,9 +507,9 @@ mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args,
         uint16_t *buf = m_new(uint16_t, frame_w * frame_h);
 
         for(auto y = 0; y < frames_y; y++) {
-            int o_y = y * frame_h * tilesheet_w;
+            int o_y = (source_y + y * frame_h) * tilesheet_w;
             for(auto x = 0; x < frames_x; x++) {
-                int o_x = x * frame_w;
+                int o_x = source_x + x * frame_w;
                 uint16_t *p = buf;
                 uint16_t *data = (uint16_t *)animation_data.buf;
                 data += o_x + o_y;
@@ -489,7 +524,11 @@ mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args,
         }
     }
 
-    return mp_obj_new_int(slot);
+    mp_obj_t *tuple = m_new(mp_obj_t, frames_x * frames_y);
+    for(auto x = 0; x < frames_x * frames_y; x++) {
+        tuple[x] = mp_obj_new_int(start_slot + x);
+    }
+    return mp_obj_new_list(frames_x * frames_y, tuple);
 }
 
 mp_obj_t ModPicoGraphics_tilemap(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -769,6 +808,22 @@ mp_obj_t ModPicoGraphics_create_pen_hsv(size_t n_args, const mp_obj_t *args) {
     return mp_obj_new_int(result);
 }
 
+mp_obj_t ModPicoGraphics_set_remote_palette(mp_obj_t self_in, mp_obj_t index) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->display->set_display_palette_index(mp_obj_get_int(index));
+
+    return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_set_local_palette(mp_obj_t self_in, mp_obj_t index) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->display->set_local_palette_index(mp_obj_get_int(index));
+
+    return mp_const_none;
+}
+
 mp_obj_t ModPicoGraphics_set_thickness(mp_obj_t self_in, mp_obj_t pen) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
 
@@ -926,7 +981,7 @@ mp_obj_t ModPicoGraphics_character(size_t n_args, const mp_obj_t *pos_args, mp_m
 }
 
 mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_text, ARG_x, ARG_y, ARG_wrap, ARG_scale, ARG_angle, ARG_spacing };
+    enum { ARG_self, ARG_text, ARG_x, ARG_y, ARG_wrap, ARG_scale, ARG_angle, ARG_spacing, ARG_fixed_width };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -936,6 +991,7 @@ mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t 
         { MP_QSTR_scale, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_angle, MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_spacing, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_fixed_width, MP_ARG_OBJ, {.u_obj = mp_const_false} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -957,19 +1013,21 @@ mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t 
     float scale = args[ARG_scale].u_obj == mp_const_none ? 2.0f : mp_obj_get_float(args[ARG_scale].u_obj);
     int angle = args[ARG_angle].u_int;
     int letter_spacing = args[ARG_spacing].u_int;
+    bool fixed_width = args[ARG_fixed_width].u_obj == mp_const_true;
 
-    self->graphics->text(t, Point(x, y), wrap, scale, angle, letter_spacing);
+    self->graphics->text(t, Point(x, y), wrap, scale, angle, letter_spacing, fixed_width);
 
     return mp_const_none;
 }
 
 mp_obj_t ModPicoGraphics_measure_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_text, ARG_scale, ARG_spacing };
+    enum { ARG_self, ARG_text, ARG_scale, ARG_spacing, ARG_fixed_width };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_text, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_scale, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_spacing, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_fixed_width, MP_ARG_OBJ, {.u_obj = mp_const_false} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -987,8 +1045,9 @@ mp_obj_t ModPicoGraphics_measure_text(size_t n_args, const mp_obj_t *pos_args, m
 
     float scale = args[ARG_scale].u_obj == mp_const_none ? 2.0f : mp_obj_get_float(args[ARG_scale].u_obj);
     int letter_spacing = args[ARG_spacing].u_int;
+    bool fixed_width = args[ARG_fixed_width].u_obj == mp_const_true;
 
-    int width = self->graphics->measure_text(t, scale, letter_spacing);
+    int width = self->graphics->measure_text(t, scale, letter_spacing, fixed_width);
 
     return mp_obj_new_int(width);
 }
