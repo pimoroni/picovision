@@ -23,6 +23,12 @@ namespace pimoroni {
     static constexpr int PALETTE_SIZE = 32;
     static constexpr int NUM_PALETTES = 2;
 
+#if SUPPORT_WIDE_MODES
+    static constexpr int MAX_DISPLAYED_SPRITES = 16;
+#else
+    static constexpr int MAX_DISPLAYED_SPRITES = 32;
+#endif
+
     enum Mode {
       MODE_PALETTE = 2,
       MODE_RGB555 = 1,
