@@ -1,6 +1,10 @@
 #include "dv_display.hpp"
 #include "swd_load.hpp"
+#if SUPPORT_WIDE_MODES
+#include "pico-stick-wide.h"
+#else
 #include "pico-stick.h"
+#endif
 
 #include <cstdlib>
 #include <math.h>

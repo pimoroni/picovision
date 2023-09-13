@@ -10,7 +10,7 @@
 #include "libraries/pico_graphics/pico_graphics.hpp"
 
 #ifndef SUPPORT_WIDE_MODES
-#define SUPPORT_WIDE_MODES 1
+#define SUPPORT_WIDE_MODES 0
 #endif
 
 // Pimoroni DV Stick

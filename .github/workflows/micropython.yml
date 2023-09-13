@@ -64,6 +64,11 @@ jobs:
           - name: PicoVision
             shortname: picovision
             board: PIMORONI_PICOVISION
+            cmake_settings:
+          - name: PicoVision Widescreen
+            shortname: picovision-widescreen
+            board: PIMORONI_PICOVISION
+            cmake_settings: -DSUPPORT_WIDE_MODES=1
 
     env:
       RELEASE_FILE: pimoroni-${{matrix.shortname}}-${{github.event.release.tag_name || github.sha}}-micropython.uf2
@@ -124,7 +129,7 @@ jobs:
       shell: bash
       working-directory: micropython/ports/rp2
       run: |
-        cmake -S . -B build -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=${{env.BOARD_DIR}}/micropython.cmake -DMICROPY_BOARD_DIR=${{env.BOARD_DIR}} -DMICROPY_BOARD=${{env.BOARD}} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake -S . -B build -DPICO_BUILD_DOCS=0 -DUSER_C_MODULES=${{env.BOARD_DIR}}/micropython.cmake -DMICROPY_BOARD_DIR=${{env.BOARD_DIR}} -DMICROPY_BOARD=${{env.BOARD}} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ${{matrix.cmake_settings}}
 
     - name: Build MicroPython
       shell: bash
