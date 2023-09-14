@@ -1,6 +1,10 @@
 #include "dv_display.hpp"
 #include "swd_load.hpp"
+#if SUPPORT_WIDE_MODES
+#include "pico-stick-wide.h"
+#else
 #include "pico-stick.h"
+#endif
 
 #include <cstdlib>
 #include <math.h>
@@ -22,10 +26,9 @@ static void my_thread_yield() {
 
 namespace pimoroni {
 
-  void DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
+  bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
     display_width = display_width_;
     display_height = display_height_;
-    mode = mode_;
 
     if (frame_width_ == 0) frame_width = display_width_;
     else frame_width = frame_width_;
@@ -51,27 +54,31 @@ namespace pimoroni {
     }
 
     if (full_width == 640) {
-      res_mode = 0;
+      res_mode = RESOLUTION_640x480;
     }
-    else if (full_width == 720) {
-      if (full_height == 480) res_mode = 1;
-      else if (full_height == 400) res_mode = 2;
-      else if (full_height == 576) res_mode = 3;
+    else if (full_width == 720 && mode_ != MODE_RGB888 ) {
+      if (full_height == 480) res_mode = RESOLUTION_720x480;
+      else if (full_height == 400) res_mode = RESOLUTION_720x400;
+      else if (full_height == 576) res_mode = RESOLUTION_720x576;
     }
+#if SUPPORT_WIDE_MODES
+    // Modes below require the widescreen build
     else if (full_width == 800) {
-      if (full_height == 600) res_mode = 0x10;
-      else if (full_height == 480) res_mode = 0x11;
-      else if (full_height == 450) res_mode = 0x12;
+      if (full_height == 600) res_mode = RESOLUTION_800x600;
+      else if (full_height == 480) res_mode = RESOLUTION_800x480;
+      else if (full_height == 450) res_mode = RESOLUTION_800x450;
     }
     else if (full_width == 960) {
-      if (full_height == 540) res_mode = 0x14;
+      if (full_height == 540) res_mode = RESOLUTION_960x540_50;
     }
     else if (full_width == 1280) {
-      if (full_height == 720) res_mode = 0x15;
+      if (full_height == 720) res_mode = RESOLUTION_1280x720;
     }
+#endif
 
     if (res_mode == 0xFF) {
-      mp_printf(&mp_plat_print, "Resolution %dx%d is not supported.  Will use 720x480.\n", display_width, display_height);
+      // Resolution is unsupported
+      return false;
     }
 
     gpio_init(RAM_SEL);
@@ -107,6 +114,10 @@ namespace pimoroni {
 
     i2c->reg_write_uint8(I2C_ADDR, I2C_REG_START, 1);
     mp_printf(&mp_plat_print, "Started\n");
+
+    set_mode(mode_);
+
+    return true;
   }
   
   void DVDisplay::flip() {
@@ -548,22 +559,26 @@ namespace pimoroni {
 
   void DVDisplay::set_sprite(int sprite_num, uint16_t sprite_data_idx, const Point &p, SpriteBlendMode blend_mode, int v_scale)
   {
-    uint8_t buf[7];
-    buf[0] = (uint8_t)blend_mode | ((v_scale - 1) << 3);
-    buf[1] = sprite_data_idx & 0xff;
-    buf[2] = sprite_data_idx >> 8;
-    buf[3] = p.x & 0xff;
-    buf[4] = p.x >> 8;
-    buf[5] = p.y & 0xff;
-    buf[6] = p.y >> 8;
+    if (sprite_num < MAX_DISPLAYED_SPRITES) {
+      uint8_t buf[7];
+      buf[0] = (uint8_t)blend_mode | ((v_scale - 1) << 3);
+      buf[1] = sprite_data_idx & 0xff;
+      buf[2] = sprite_data_idx >> 8;
+      buf[3] = p.x & 0xff;
+      buf[4] = p.x >> 8;
+      buf[5] = p.y & 0xff;
+      buf[6] = p.y >> 8;
 
-    i2c->write_bytes(I2C_ADDR, sprite_num, buf, 7);
+      i2c->write_bytes(I2C_ADDR, sprite_num, buf, 7);
+    }
   }
 
   void DVDisplay::clear_sprite(int sprite_num)
   {
-    uint8_t buf[3] = {1, 0xFF, 0xFF};
-    i2c->write_bytes(I2C_ADDR, sprite_num, buf, 3);
+    if (sprite_num < MAX_DISPLAYED_SPRITES) {
+      uint8_t buf[3] = {1, 0xFF, 0xFF};
+      i2c->write_bytes(I2C_ADDR, sprite_num, buf, 3);
+    }
   }
 
   uint32_t DVDisplay::point_to_address(const Point& p) const {

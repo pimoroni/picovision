@@ -2,6 +2,8 @@ set(MOD_NAME picographics)
 string(TOUPPER ${MOD_NAME} MOD_NAME_UPPER)
 add_library(usermod_${MOD_NAME} INTERFACE)
 
+option(SUPPORT_WIDE_MODES "Build with widescreen support." OFF)
+
 get_filename_component(PICOVISION_PATH ${CMAKE_CURRENT_LIST_DIR}/../.. ABSOLUTE)
 
 target_sources(usermod_${MOD_NAME} INTERFACE
@@ -34,6 +36,12 @@ target_include_directories(usermod_${MOD_NAME} INTERFACE
 target_compile_definitions(usermod_${MOD_NAME} INTERFACE
     -DMODULE_${MOD_NAME_UPPER}_ENABLED=1
 )
+
+if (SUPPORT_WIDE_MODES)
+target_compile_definitions(usermod_${MOD_NAME} INTERFACE
+    -DSUPPORT_WIDE_MODES=1
+)
+endif()
 
 target_link_libraries(usermod INTERFACE usermod_${MOD_NAME})
 
