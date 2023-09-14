@@ -7,8 +7,7 @@ namespace pimoroni {
     }
 
     PicoGraphics_PenDV_P5::PicoGraphics_PenDV_P5(uint16_t width, uint16_t height, DVDisplay &dv_display)
-    : PicoGraphics(width, height, nullptr),
-      driver(dv_display)
+      : PicoGraphicsDV(width, height, dv_display)
       {
         this->pen_type = PEN_DV_P5;
         for(auto i = 0u; i < palette_size; i++) {
