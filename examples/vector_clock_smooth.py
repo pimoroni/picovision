@@ -86,6 +86,8 @@ t_frames = 0
 t_total = 0
 last_second = None
 
+last_clip = [(0,0,0,0), (0,0,0,0)]
+
 while True:
     year, month, day, hour, minute, second, _, _ = time.localtime()
 
@@ -123,20 +125,24 @@ while True:
 
     # Create a clipping region which includes all of the hands
     clip_x = min(second_hand_bounds[0], minute_hand_bounds[0], hour_hand_bounds[0])
-    clip_y = min(second_hand_bounds[1], minute_hand_bounds[1], hour_hand_bounds[1])
-    clip_w = max(second_hand_bounds[0] + second_hand_bounds[2], minute_hand_bounds[0] + minute_hand_bounds[2], hour_hand_bounds[0] + hour_hand_bounds[2]) - clip_x
-    clip_h = max(second_hand_bounds[1] + second_hand_bounds[3], minute_hand_bounds[1] + minute_hand_bounds[3], hour_hand_bounds[1] + hour_hand_bounds[3]) - clip_y
+    clip_y = min(second_hand_bounds[1], minute_hand_bounds[1], hour_hand_bounds[1]) - 5
+    clip_max_x = max(second_hand_bounds[0] + second_hand_bounds[2], minute_hand_bounds[0] + minute_hand_bounds[2], hour_hand_bounds[0] + hour_hand_bounds[2])
+    clip_max_y = max(second_hand_bounds[1] + second_hand_bounds[3], minute_hand_bounds[1] + minute_hand_bounds[3], hour_hand_bounds[1] + hour_hand_bounds[3]) + 5
 
-    # A little extra margin around our clipping region
-    # This ensures it catches the trailing edge of the second hand
-    # TODO: This could probably work better
-    clip_x -= 8
-    clip_y -= 8
-    clip_w += 16
-    clip_h += 16
+    # Remember this clipping window for 2 frames time
+    last_clip.append((clip_x, clip_y, clip_max_x, clip_max_y),)
+    
+    # Expand to also cover the clipping window from 2 frames ago
+    clip_x = min(clip_x, last_clip[0][0])
+    clip_y = min(clip_y, last_clip[0][1])
+    clip_max_x = max(clip_max_x, last_clip[0][2])
+    clip_max_y = max(clip_max_y, last_clip[0][3])
 
     # Apply the clipping region so we only redraw the parts of the clock which have changed
-    display.set_clip(clip_x, clip_y, clip_w, clip_h)
+    display.set_clip(clip_x, clip_y, clip_max_x - clip_x + 1, clip_max_y - clip_y + 1)
+    
+    # Drop the clipping window from 2 frames ago, we no longer need it
+    last_clip = last_clip[1:]
 
     # Clear to white just inside our anti-aliased outer circle and clipping region
     display.set_pen(WHITE)
