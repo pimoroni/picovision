@@ -1,6 +1,6 @@
 import time
 import pngdec
-from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_P5 as PEN
+from picographics import PicoGraphics, PEN_P5
 import pvgame
 import random
 
@@ -63,7 +63,7 @@ PALETTE_1BIT = [
     BLACK
 ]
 
-display = PicoGraphics(DISPLAY_PICOVISION, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, frame_width=DISPLAY_WIDTH * FRAME_SCALE_X, frame_height=DISPLAY_HEIGHT * FRAME_SCALE_Y, pen_type=PEN)
+display = PicoGraphics(PEN_P5, DISPLAY_WIDTH, DISPLAY_HEIGHT, frame_width=DISPLAY_WIDTH * FRAME_SCALE_X, frame_height=DISPLAY_HEIGHT * FRAME_SCALE_Y)
 png = pngdec.PNG(display)
 
 display.set_local_palette(0)
