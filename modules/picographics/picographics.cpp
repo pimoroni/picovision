@@ -160,9 +160,8 @@ MICROPY_EVENT_POLL_HOOK
 mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     ModPicoGraphics_obj_t *self = nullptr;
 
-    enum { ARG_display, ARG_pen_type, ARG_width, ARG_height, ARG_frame_width, ARG_frame_height };
+    enum { ARG_pen_type, ARG_width, ARG_height, ARG_frame_width, ARG_frame_height };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_display, MP_ARG_INT | MP_ARG_REQUIRED },
         { MP_QSTR_pen_type, MP_ARG_INT, { .u_int = PEN_DV_RGB888 } },
         { MP_QSTR_width, MP_ARG_INT, { .u_int = 320 } },
         { MP_QSTR_height, MP_ARG_INT, { .u_int = 240 } },
@@ -179,9 +178,14 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
 
     bool status = false;
     int width = args[ARG_width].u_int;
-    int height = args[ARG_height].u_int;
+    int height = args[ARG_width].u_int;
     int frame_width = args[ARG_frame_width].u_int == -1 ? width : args[ARG_frame_width].u_int;
     int frame_height = args[ARG_frame_height].u_int == -1 ? height : args[ARG_frame_height].u_int;
+
+    if(frame_width < width || frame_height < height) {
+        mp_raise_msg(&mp_type_RuntimeError, "PicoGraphics: Frame smaller than display!");
+    }
+
     int pen_type = args[ARG_pen_type].u_int;
 
     // Create an instance of the graphics library and DV display driver

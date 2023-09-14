@@ -1,11 +1,5 @@
 #include "picographics.h"
 
-// Module functions
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_module_RGB_to_RGB332_obj, ModPicoGraphics_module_RGB_to_RGB332);
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_module_RGB_to_RGB565_obj, ModPicoGraphics_module_RGB_to_RGB565);
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_module_RGB332_to_RGB_obj, ModPicoGraphics_module_RGB332_to_RGB);
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_module_RGB565_to_RGB_obj, ModPicoGraphics_module_RGB565_to_RGB);
-
 // DV Display specific functions
 MP_DEFINE_CONST_FUN_OBJ_KW(ModPicoGraphics_set_display_offset_obj, 1, ModPicoGraphics_set_display_offset);
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_set_scroll_index_for_lines_obj, 4, 4, ModPicoGraphics_set_scroll_index_for_lines);
@@ -126,17 +120,15 @@ STATIC const mp_map_elem_t picographics_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_picographics) },
     { MP_ROM_QSTR(MP_QSTR_PicoGraphics), (mp_obj_t)&ModPicoGraphics_type },
 
-    // Colour conversion
-    { MP_ROM_QSTR(MP_QSTR_RGB_to_RGB332), MP_ROM_PTR(&ModPicoGraphics_module_RGB_to_RGB332_obj) },
-    { MP_ROM_QSTR(MP_QSTR_RGB_to_RGB565), MP_ROM_PTR(&ModPicoGraphics_module_RGB_to_RGB565_obj) },
-    { MP_ROM_QSTR(MP_QSTR_RGB332_to_RGB), MP_ROM_PTR(&ModPicoGraphics_module_RGB332_to_RGB_obj) },
-    { MP_ROM_QSTR(MP_QSTR_RGB565_to_RGB), MP_ROM_PTR(&ModPicoGraphics_module_RGB565_to_RGB_obj) },
+    { MP_ROM_QSTR(MP_QSTR_PEN_RGB888), MP_ROM_INT(PEN_DV_RGB888) },
+    { MP_ROM_QSTR(MP_QSTR_PEN_RGB555), MP_ROM_INT(PEN_DV_RGB555) },
+    { MP_ROM_QSTR(MP_QSTR_PEN_P5), MP_ROM_INT(PEN_DV_P5) },
 
-    { MP_ROM_QSTR(MP_QSTR_DISPLAY_PICOVISION), MP_ROM_INT(DISPLAY_PICOVISION) },
-
-    { MP_ROM_QSTR(MP_QSTR_PEN_DV_RGB888), MP_ROM_INT(PEN_DV_RGB888) },
-    { MP_ROM_QSTR(MP_QSTR_PEN_DV_RGB555), MP_ROM_INT(PEN_DV_RGB555) },
-    { MP_ROM_QSTR(MP_QSTR_PEN_DV_P5), MP_ROM_INT(PEN_DV_P5) },
+#if SUPPORT_WIDE_MODES
+    { MP_ROM_QSTR(MP_QSTR_WIDESCREEN), MP_ROM_TRUE },
+#else
+    { MP_ROM_QSTR(MP_QSTR_WIDESCREEN), MP_ROM_FALSE },
+#endif
 };
 STATIC MP_DEFINE_CONST_DICT(mp_module_picographics_globals, picographics_globals_table);
 
