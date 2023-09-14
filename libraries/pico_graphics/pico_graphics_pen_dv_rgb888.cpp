@@ -2,13 +2,15 @@
 
 namespace pimoroni {
     PicoGraphics_PenDV_RGB888::PicoGraphics_PenDV_RGB888(uint16_t width, uint16_t height, DVDisplay &dv_display)
-      : PicoGraphics(width, height, nullptr),
-        driver(dv_display)
+      : PicoGraphicsDV(width, height, dv_display)
     {
         this->pen_type = PEN_DV_RGB888;
     }
     void PicoGraphics_PenDV_RGB888::set_pen(uint c) {
         color = c;
+    }
+    void PicoGraphics_PenDV_RGB888::set_bg(uint c) {
+        background = c;
     }
     void PicoGraphics_PenDV_RGB888::set_pen(uint8_t r, uint8_t g, uint8_t b) {
         RGB src_color{r, g, b};
@@ -27,10 +29,11 @@ namespace pimoroni {
         driver.write_pixel_span(p, l, color);
     }
     void PicoGraphics_PenDV_RGB888::set_pixel_alpha(const Point &p, const uint8_t a) {
-        uint32_t src = 0;
-
-        // TODO we need a *uint32_t read_pixel_span here?
-        //driver.read_pixel_span(p, 2, &src);
+        uint32_t src = background;
+        if (blend_mode == BlendMode::TARGET) {
+            // TODO we need a *uint32_t read_pixel_span here?
+            //driver.read_pixel_span(p, 2, &src);
+        }
 
         // TODO: "uint" should be RGB888 but there's curently a mismatch between "uint32_t" and "unsigned int"
         RGB888 blended = RGB((uint)src).blend(RGB((uint)color), a).to_rgb888();

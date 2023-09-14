@@ -29,7 +29,7 @@ static DVDisplay dv_display(&dv_i2c);
 
 typedef struct _ModPicoGraphics_obj_t {
     mp_obj_base_t base;
-    PicoGraphics *graphics;
+    PicoGraphicsDV *graphics;
     DVDisplay *display;
 } ModPicoGraphics_obj_t;
 
@@ -757,6 +757,22 @@ mp_obj_t ModPicoGraphics_set_pen(mp_obj_t self_in, mp_obj_t pen) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
 
     self->graphics->set_pen(mp_obj_get_int(pen));
+
+    return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_set_bg(mp_obj_t self_in, mp_obj_t pen) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->graphics->set_bg(mp_obj_get_int(pen));
+
+    return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_set_blend_mode(mp_obj_t self_in, mp_obj_t pen) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->graphics->set_blend_mode((BlendMode)mp_obj_get_int(pen));
 
     return mp_const_none;
 }

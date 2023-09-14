@@ -23,6 +23,10 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_create_pen_obj, 4, 4, ModPic
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_create_pen_hsv_obj, 4, 4, ModPicoGraphics_create_pen_hsv);
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_thickness_obj, ModPicoGraphics_set_thickness);
 
+// Alpha Blending
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_bg_obj, ModPicoGraphics_set_bg);
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_blend_mode_obj, ModPicoGraphics_set_blend_mode);
+
 // Primitives
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_set_clip_obj, 5, 5, ModPicoGraphics_set_clip);
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_remove_clip_obj, ModPicoGraphics_remove_clip);
@@ -58,6 +62,9 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_thickness), MP_ROM_PTR(&ModPicoGraphics_set_thickness_obj) },
     { MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&ModPicoGraphics_clear_obj) },
 
+    { MP_ROM_QSTR(MP_QSTR_set_bg), MP_ROM_PTR(&ModPicoGraphics_set_bg_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_blend_mode), MP_ROM_PTR(&ModPicoGraphics_set_blend_mode_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_set_display_offset), MP_ROM_PTR(&ModPicoGraphics_set_display_offset_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_scroll_index_for_lines), MP_ROM_PTR(&ModPicoGraphics_set_scroll_index_for_lines_obj) },
 
@@ -73,6 +80,8 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_polygon), MP_ROM_PTR(&ModPicoGraphics_polygon_obj) },
     { MP_ROM_QSTR(MP_QSTR_triangle), MP_ROM_PTR(&ModPicoGraphics_triangle_obj) },
     { MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&ModPicoGraphics_line_obj) },
+
+
 
     { MP_ROM_QSTR(MP_QSTR_load_sprite), MP_ROM_PTR(&ModPicoGraphics_load_sprite_obj) },
     { MP_ROM_QSTR(MP_QSTR_display_sprite), MP_ROM_PTR(&ModPicoGraphics_display_sprite_obj) },
@@ -123,6 +132,9 @@ STATIC const mp_map_elem_t picographics_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_PEN_RGB888), MP_ROM_INT(PEN_DV_RGB888) },
     { MP_ROM_QSTR(MP_QSTR_PEN_RGB555), MP_ROM_INT(PEN_DV_RGB555) },
     { MP_ROM_QSTR(MP_QSTR_PEN_P5), MP_ROM_INT(PEN_DV_P5) },
+
+    { MP_ROM_QSTR(MP_QSTR_BLEND_TARGET), MP_ROM_INT(0) },
+    { MP_ROM_QSTR(MP_QSTR_BLEND_FIXED), MP_ROM_INT(1) },
 
 #if SUPPORT_WIDE_MODES
     { MP_ROM_QSTR(MP_QSTR_WIDESCREEN), MP_ROM_TRUE },

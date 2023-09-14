@@ -2,13 +2,38 @@
 #include "dv_display.hpp"
 
 namespace pimoroni {
-  class PicoGraphics_PenDV_RGB555 : public PicoGraphics {
+  enum BlendMode {
+    TARGET = 0,
+    FIXED = 1,
+  };
+
+  class PicoGraphicsDV : public PicoGraphics {
+    public:
+      DVDisplay &driver;
+      BlendMode blend_mode = BlendMode::TARGET;
+
+      void set_blend_mode(BlendMode mode) {
+        blend_mode = mode;
+      };
+
+      virtual void set_bg(uint c) {};
+
+      PicoGraphicsDV(uint16_t width, uint16_t height, DVDisplay &dv_display)
+      : PicoGraphics(width, height, nullptr),
+        driver(dv_display)
+      {
+          this->pen_type = PEN_DV_RGB555;
+      }
+  };
+
+  class PicoGraphics_PenDV_RGB555 : public PicoGraphicsDV {
     public:
       RGB555 color;
-      DVDisplay &driver;
+      RGB555 background;
 
       PicoGraphics_PenDV_RGB555(uint16_t width, uint16_t height, DVDisplay &dv_display);
       void set_pen(uint c) override;
+      void set_bg(uint c) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen_hsv(float h, float s, float v) override;
@@ -25,13 +50,14 @@ namespace pimoroni {
       }
   };
 
-  class PicoGraphics_PenDV_RGB888 : public PicoGraphics {
+  class PicoGraphics_PenDV_RGB888 : public PicoGraphicsDV {
     public:
       RGB888 color;
-      DVDisplay &driver;
+      RGB888 background;
 
       PicoGraphics_PenDV_RGB888(uint16_t width, uint16_t height, DVDisplay &dv_display);
       void set_pen(uint c) override;
+      void set_bg(uint c) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen_hsv(float h, float s, float v) override;
@@ -46,11 +72,10 @@ namespace pimoroni {
       }
   };
 
-  class PicoGraphics_PenDV_P5 : public PicoGraphics {
+  class PicoGraphics_PenDV_P5 : public PicoGraphicsDV {
     public:
       static const uint16_t palette_size = 32;
       uint8_t color;
-      DVDisplay &driver;
       bool used[2][palette_size];
 
       std::array<std::array<uint8_t, 16>, 512> candidate_cache;

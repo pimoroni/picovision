@@ -10,13 +10,15 @@ extern "C" {
 
 namespace pimoroni {
     PicoGraphics_PenDV_RGB555::PicoGraphics_PenDV_RGB555(uint16_t width, uint16_t height, DVDisplay &dv_display)
-      : PicoGraphics(width, height, nullptr),
-        driver(dv_display)
+      : PicoGraphicsDV(width, height, dv_display)
     {
         this->pen_type = PEN_DV_RGB555;
     }
     void PicoGraphics_PenDV_RGB555::set_pen(uint c) {
         color = c;
+    }
+    void PicoGraphics_PenDV_RGB555::set_bg(uint c) {
+        background = c;
     }
     void PicoGraphics_PenDV_RGB555::set_pen(uint8_t r, uint8_t g, uint8_t b) {
         RGB src_color{r, g, b};
@@ -35,8 +37,10 @@ namespace pimoroni {
         driver.write_pixel_span(p, l, color);
     }
     void PicoGraphics_PenDV_RGB555::set_pixel_alpha(const Point &p, const uint8_t a) {
-        uint16_t src = 0;
-        driver.read_pixel_span(p, 1, &src);
+        uint16_t src = background;
+        if (blend_mode == BlendMode::TARGET) {
+            driver.read_pixel_span(p, 1, &src);
+        }
 
         uint8_t src_r = (src >> 7) & 0b11111000;
         uint8_t src_g = (src >> 2) & 0b11111000;
