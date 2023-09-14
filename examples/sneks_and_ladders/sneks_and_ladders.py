@@ -170,16 +170,19 @@ class Player(pvgame.Actor):
         self.old_v_x = None
         self.state = self.WALKING
         self.last_ladder = None
-        
+
+    def bounds(self):
+        return (self.x + 4, self.y, pvgame.TILE_W - 8, pvgame.TILE_H)
+
     def move(self, level_data):
         self.update(level_data)
-        
+
         tile_x = int(self.x / pvgame.TILE_W)
         tile_y = int((self.y + 15) / pvgame.TILE_H)
-    
+
         if self.last_ladder is not None:
             ladder_distance = abs(tile_x - self.last_ladder)
-        
+
             if ladder_distance >= 3:
                 self.last_ladder = None
 
@@ -197,46 +200,49 @@ class Player(pvgame.Actor):
                     self.v_y = -1
                     self.state = self.CLIMBING_UP
                     self.last_ladder = tile_x
-                    print("Climbing Up")
                 elif tile_below == 5 and self.x % pvgame.TILE_W == 0 and random.randint(1, 2) == 1:
                     self.old_v_x = self.v_x
                     self.v_x = 0
                     self.v_y = 1
                     self.state = self.CLIMBING_DOWN
                     self.last_ladder = tile_x
-                    print("Climbing Down")
         elif self.state == self.CLIMBING_UP:
             if tile_behind == 0:
                 self.y = int(self.y / pvgame.TILE_H) * pvgame.TILE_H
                 self.v_y = 0
                 self.v_x = self.old_v_x
                 self.state = self.WALKING
-                print("Walking")
         elif self.state == self.CLIMBING_DOWN:
             if tile_behind in (1, 2, 3):
                 self.y = int(self.y / pvgame.TILE_H) * pvgame.TILE_H
                 self.v_y = 0
                 self.v_x = self.old_v_x
                 self.state = self.WALKING
-                print("Walking")
 
 
-spritelist = pvgame.SpriteList(display)
+spritelist = pvgame.SpriteList(display, max_sprites=16)
 player = Player(spritelist, 5 * pvgame.TILE_H, 2 * pvgame.TILE_H, AAAAHL, AAAAHR, ping_pong=True)
 snake_a = pvgame.Actor(spritelist, 2 * pvgame.TILE_H, 2 * pvgame.TILE_H, SNEK_AL, SNEK_AR)
 snake_b = pvgame.Actor(spritelist, 4 * pvgame.TILE_H, 6 * pvgame.TILE_H, SNEK_BL, SNEK_BR)
 snake_c = pvgame.Actor(spritelist, 2 * pvgame.TILE_H, 8 * pvgame.TILE_H, SNEK_AL, SNEK_AR)
 snake_d = pvgame.Actor(spritelist, 16 * pvgame.TILE_H, 8 * pvgame.TILE_H, SNEK_BL, SNEK_BR)
 
+collisionlist = pvgame.CollisionList()
+
 t_end = time.ticks_ms()
 print(f"Startup time: {t_end - t_start}ms")
+
+remote_palette = 0
+
+
+def white_screen():
+    global remote_palette
+    remote_palette = 1
+
 
 t_start = time.time()
 
 while True:
-    pal = int((time.time() - t_start) / 5) % 2
-    display.set_remote_palette(pal)
-
     fire_x = int(time.ticks_ms() / 200) % FIRE_FRAMES
     fire_x *= SPRITE_W * FIRE_FRAMES
     display.set_display_offset(fire_x, 0, 3)
@@ -249,6 +255,15 @@ while True:
     snake_c.update(level_data)
     snake_d.update(level_data)
 
+    remote_palette = 0
+    collisionlist.clear()
+    collisionlist.add(snake_a.bounds(), white_screen)
+    collisionlist.add(snake_b.bounds(), white_screen)
+    collisionlist.add(snake_c.bounds(), white_screen)
+    collisionlist.add(snake_d.bounds(), white_screen)
+    collisionlist.test(*player.bounds())
+    display.set_remote_palette(remote_palette)
+
     spritelist.clear()
     player.draw(t, 0, 32)
     snake_a.draw(t, 0, 32)
@@ -257,5 +272,4 @@ while True:
     snake_d.draw(t, 0, 32)
     spritelist.display()
 
-    time.sleep(1.0 / 30)
-
+    time.sleep(1.0 / 60)

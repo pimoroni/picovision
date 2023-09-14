@@ -94,6 +94,9 @@ class Actor:
 
         self.facing = self.LEFT
 
+    def bounds(self):
+        return (self.x, self.y, TILE_W, TILE_H)
+
     def update(self, level_data):
         level_width = len(level_data[0]) * TILE_W
 
@@ -116,4 +119,3 @@ class Actor:
         else:
             frame = self.frames_right[t % self.r_count]
         self.spritelist.add(frame, self.x + offset_x, self.y + offset_y)
-
