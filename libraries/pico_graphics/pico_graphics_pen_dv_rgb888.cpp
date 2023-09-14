@@ -65,12 +65,17 @@ namespace pimoroni {
         // Start reading the first row
         uint32_t address = driver.point_to_address({bounds.x, bounds.y});
         uint32_t row_len_in_words = (bounds.w * 3 + 3) >> 2;
-        driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+        if (blend_mode == BlendMode::TARGET) {
+            driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+        }
 
         const uint8_t colour_expanded[3] = { (uint8_t)color, (uint8_t)(color >> 8), (uint8_t)(color >> 16) };
+        const uint8_t background_expanded[3] = { (uint8_t)background, (uint8_t)(background >> 8), (uint8_t)(background >> 16) };
         uint32_t address_stride = driver.frame_row_stride();
 
-        driver.raw_wait_for_finish_blocking();
+        if (blend_mode == BlendMode::TARGET) {
+            driver.raw_wait_for_finish_blocking();
+        }
 
         for (int32_t y = 0; y < bounds.h; ++y) {
             std::swap(wbuf, rbuf);
@@ -81,24 +86,43 @@ namespace pimoroni {
 
             // Process this row
             uint8_t* alpha_ptr = &alpha_data[stride * y];
-            for (int32_t x = 0; x < bounds.w; ++x) {
-                uint8_t alpha = *alpha_ptr++;
-                if (alpha >= alpha_max) {
-                    wbuf[x*3] = colour_expanded[0];
-                    wbuf[x*3+1] = colour_expanded[1];
-                    wbuf[x*3+2] = colour_expanded[2];
-                } else if (alpha > 0) {
+            if (blend_mode == BlendMode::TARGET) {
+                for (int32_t x = 0; x < bounds.w; ++x) {
+                    uint8_t alpha = *alpha_ptr++;
+                    if (alpha >= alpha_max) {
+                        wbuf[x*3] = colour_expanded[0];
+                        wbuf[x*3+1] = colour_expanded[1];
+                        wbuf[x*3+2] = colour_expanded[2];
+                    } else if (alpha > 0) {
+                        alpha = alpha_map[alpha];
+                        for (int32_t i = 0; i < 3; ++i) {
+                            uint8_t src = wbuf[x*3+i];
+                            wbuf[x*3+i] = (src * (16 - alpha) + colour_expanded[i] * alpha) >> 4;
+                        }
+                    }
 
-                    alpha = alpha_map[alpha];
-                    for (int32_t i = 0; i < 3; ++i) {
-                        uint8_t src = wbuf[x*3+i];
-                        wbuf[x*3+i] = (src * (16 - alpha) + colour_expanded[i] * alpha) >> 4;
+                    // Halfway through processing this row switch from writing previous row to reading the next
+                    if (x == bounds.w >> 1 && y+1 < bounds.h) {
+                        driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
                     }
                 }
-
-                // Halfway through processing this row switch from writing previous row to reading the next
-                if (x == bounds.w >> 1 && y+1 < bounds.h) {
-                    driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+            } else {
+                for (int32_t x = 0; x < bounds.w; ++x) {
+                    uint8_t alpha = *alpha_ptr++;
+                    if (alpha >= alpha_max) {
+                        wbuf[x*3] = colour_expanded[0];
+                        wbuf[x*3+1] = colour_expanded[1];
+                        wbuf[x*3+2] = colour_expanded[2];
+                    } else if (alpha > 0) {
+                        alpha = alpha_map[alpha];
+                        for (int32_t i = 0; i < 3; ++i) {
+                            wbuf[x*3+i] = (background_expanded[i] * (16 - alpha) + colour_expanded[i] * alpha) >> 4;
+                        }
+                    } else {
+                        wbuf[x*3] = background_expanded[0];
+                        wbuf[x*3+1] = background_expanded[1];
+                        wbuf[x*3+2] = background_expanded[2];
+                    }
                 }
             }
 

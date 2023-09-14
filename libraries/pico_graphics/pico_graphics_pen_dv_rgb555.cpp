@@ -80,12 +80,17 @@ namespace pimoroni {
         // Start reading the first row
         uint32_t address = driver.point_to_address({bounds.x, bounds.y});
         uint32_t row_len_in_words = (bounds.w + 1) >> 1;
-        driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+        if (blend_mode == BlendMode::TARGET) {
+            driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+        }
 
         const uint32_t colour_expanded = (uint32_t(color & 0x7C00) << 10) | (uint32_t(color & 0x3E0) << 5) | (color & 0x1F);
+        const uint32_t background_expanded = (uint32_t(background & 0x7C00) << 10) | (uint32_t(background & 0x3E0) << 5) | (background & 0x1F);
         uint32_t address_stride = driver.frame_row_stride();
 
-        driver.raw_wait_for_finish_blocking();
+        if (blend_mode == BlendMode::TARGET) {
+            driver.raw_wait_for_finish_blocking();
+        }
 
         for (int32_t y = 0; y < bounds.h; ++y) {
             std::swap(wbuf, rbuf);
@@ -96,25 +101,41 @@ namespace pimoroni {
 
             // Process this row
             uint8_t* alpha_ptr = &alpha_data[stride * y];
-            for (int32_t x = 0; x < bounds.w; ++x) {
-                uint8_t alpha = *alpha_ptr++;
-                if (alpha >= alpha_max) {
-                    wbuf[x] = color;
-                } else if (alpha > 0) {
+            if (blend_mode == BlendMode::TARGET) {
+                for (int32_t x = 0; x < bounds.w; ++x) {
+                    uint8_t alpha = *alpha_ptr++;
+                    if (alpha >= alpha_max) {
+                        wbuf[x] = color;
+                    } else if (alpha > 0) {
+                        alpha = alpha_map[alpha];
 
-                    uint16_t src = wbuf[x];
-                    alpha = alpha_map[alpha];
+                        uint16_t src = wbuf[x];
 
-                    // Who said Cortex-M0 can't do SIMD?
-                    const uint32_t src_expanded = (uint32_t(src & 0x7C00) << 10) | (uint32_t(src & 0x3E0) << 5) | (src & 0x1F);
-                    const uint32_t blended = src_expanded * (16 - alpha) + colour_expanded * alpha;
-                    wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F);
+                        // Who said Cortex-M0 can't do SIMD?
+                        const uint32_t src_expanded = (uint32_t(src & 0x7C00) << 10) | (uint32_t(src & 0x3E0) << 5) | (src & 0x1F);
+                        const uint32_t blended = src_expanded * (16 - alpha) + colour_expanded * alpha;
+                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F);
+                    }
+
+                    // Halfway through processing this row switch from writing previous row to reading the next
+                    if (x+1 == (int32_t)row_len_in_words && y+1 < bounds.h) {
+                        driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+                    }
                 }
+            } else {
+                for (int32_t x = 0; x < bounds.w; ++x) {
+                    uint8_t alpha = *alpha_ptr++;
+                    if (alpha >= alpha_max) {
+                        wbuf[x] = color;
+                    } else if (alpha > 0) {
+                        alpha = alpha_map[alpha];
 
-                // Halfway through processing this row switch from writing previous row to reading the next
-                if (x+1 == (int32_t)row_len_in_words && y+1 < bounds.h) {
-                    driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
-                }
+                        const uint32_t blended = background_expanded * (16 - alpha) + colour_expanded * alpha;
+                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F);
+                    } else {
+                        wbuf[x] = background;
+                    }
+                }          
             }
 
             // Write the row out while we loop on to the next
