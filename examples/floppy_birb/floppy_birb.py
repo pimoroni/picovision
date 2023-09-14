@@ -5,13 +5,13 @@ import machine
 import gc
 import cppmem
 import pngdec
-from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555
-from picovector import PicoVector, Polygon, ANTIALIAS_X4
+from picographics import PicoGraphics, PEN_RGB555, WIDESCREEN
+from picovector import PicoVector, Polygon, ANTIALIAS_X16
 
 
 cppmem.set_mode(cppmem.MICROPYTHON)
 
-display = PicoGraphics(DISPLAY_PICOVISION, width=720, height=480, frame_width=720 * 2, frame_height=480, pen_type=PEN_DV_RGB555)
+display = PicoGraphics(PEN_RGB555, 720, 480, frame_width=720 * 2, frame_height=480)
 png = pngdec.PNG(display)
 
 # Main difficulty settings
@@ -59,7 +59,7 @@ for _ in range(2):
     display.update()
 
 vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_X4)
+vector.set_antialiasing(ANTIALIAS_X16)
 vector.set_font("OpenSans-Regular.af", 50)
 
 
@@ -224,9 +224,10 @@ def reset_game():
 class SpriteList:
     def __init__(self):
         self.items = []
+        self.max_sprites = 16 if WIDESCREEN else 32
 
     def add(self, image, x, y, v_scale=1, force=False):
-        if len(self.items) == 32:
+        if len(self.items) == self.max_sprites:
             if force:
                 self.items.pop(0)
             else:
@@ -237,7 +238,7 @@ class SpriteList:
         self.items = []
 
     def display(self):
-        for i in range(32):
+        for i in range(self.max_sprites):
             try:
                 image, x, y, v_scale = self.items[i]
                 display.display_sprite(i, image, x, y, v_scale=v_scale)
