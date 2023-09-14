@@ -74,6 +74,7 @@ namespace pimoroni {
     static constexpr uint I2C_REG_GPIO_HI_OE = 0xCA;
     static constexpr uint I2C_REG_GPIO_HI_PULL_UP = 0xCB;
     static constexpr uint I2C_REG_GPIO_HI_PULL_DOWN = 0xCC;
+    static constexpr uint I2C_REG_GPU_TEMP = 0xCE;
     static constexpr uint I2C_REG_EDID = 0xED;
     static constexpr uint I2C_REG_PALETTE_INDEX = 0xEE;
     static constexpr uint I2C_REG_SCROLL_BASE = 0xF0;
@@ -229,6 +230,7 @@ namespace pimoroni {
       void set_gpio_hi_pull_up_all(uint8_t vals);
       void set_gpio_hi_pull_down(uint pin, bool on);
       void set_gpio_hi_pull_down_all(uint8_t vals);
+      float get_gpu_temp();  // in C
 
       bool is_button_b_pressed() { return (get_gpio() & 0x1) != 0x1; }
       bool is_button_c_pressed() { return (get_gpio() & 0x2) != 0x2; }
