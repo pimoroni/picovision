@@ -178,7 +178,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
 
     bool status = false;
     int width = args[ARG_width].u_int;
-    int height = args[ARG_width].u_int;
+    int height = args[ARG_height].u_int;
     int frame_width = args[ARG_frame_width].u_int == -1 ? width : args[ARG_frame_width].u_int;
     int frame_height = args[ARG_frame_height].u_int == -1 ? height : args[ARG_frame_height].u_int;
 
