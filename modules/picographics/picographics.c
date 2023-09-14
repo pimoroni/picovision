@@ -110,7 +110,7 @@ STATIC MP_DEFINE_CONST_DICT(ModPicoGraphics_locals_dict, ModPicoGraphics_locals_
 #ifdef MP_DEFINE_CONST_OBJ_TYPE
 MP_DEFINE_CONST_OBJ_TYPE(
     ModPicoGraphics_type,
-    MP_QSTR_picographics,
+    MP_QSTR_picovision,
     MP_TYPE_FLAG_NONE,
     make_new, ModPicoGraphics_make_new,
     locals_dict, (mp_obj_dict_t*)&ModPicoGraphics_locals_dict
@@ -118,7 +118,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 #else
 const mp_obj_type_t ModPicoGraphics_type = {
     { &mp_type_type },
-    .name = MP_QSTR_picographics,
+    .name = MP_QSTR_picovision,
     .make_new = ModPicoGraphics_make_new,
     .locals_dict = (mp_obj_dict_t*)&ModPicoGraphics_locals_dict,
 };
@@ -126,8 +126,8 @@ const mp_obj_type_t ModPicoGraphics_type = {
 
 /***** Module Globals *****/
 STATIC const mp_map_elem_t picographics_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_picographics) },
-    { MP_ROM_QSTR(MP_QSTR_PicoGraphics), (mp_obj_t)&ModPicoGraphics_type },
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_picovision) },
+    { MP_ROM_QSTR(MP_QSTR_PicoVision), (mp_obj_t)&ModPicoGraphics_type },
 
     { MP_ROM_QSTR(MP_QSTR_PEN_RGB888), MP_ROM_INT(PEN_DV_RGB888) },
     { MP_ROM_QSTR(MP_QSTR_PEN_RGB555), MP_ROM_INT(PEN_DV_RGB555) },
@@ -151,7 +151,7 @@ const mp_obj_module_t picographics_user_cmodule = {
 };
 
 #if MICROPY_VERSION <= 70144
-MP_REGISTER_MODULE(MP_QSTR_picographics, picographics_user_cmodule, MODULE_PICOGRAPHICS_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR_picovision, picographics_user_cmodule, MODULE_PICOGRAPHICS_ENABLED);
 #else
-MP_REGISTER_MODULE(MP_QSTR_picographics, picographics_user_cmodule);
+MP_REGISTER_MODULE(MP_QSTR_picovision, picographics_user_cmodule);
 #endif
