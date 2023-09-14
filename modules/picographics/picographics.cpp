@@ -183,7 +183,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     int frame_height = args[ARG_frame_height].u_int == -1 ? height : args[ARG_frame_height].u_int;
 
     if(frame_width < width || frame_height < height) {
-        mp_raise_msg(&mp_type_RuntimeError, "PicoGraphics: Frame smaller than display!");
+        mp_raise_msg(&mp_type_RuntimeError, "PicoVision: Frame smaller than display!");
     }
 
     int pen_type = args[ARG_pen_type].u_int;
@@ -207,7 +207,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     }
 
     if (!status) {
-        mp_raise_msg(&mp_type_RuntimeError, "PicoGraphics: Unsupported Mode!");
+        mp_raise_msg(&mp_type_RuntimeError, "PicoVision: Unsupported Mode!");
     }
 
     self->display = &dv_display;
