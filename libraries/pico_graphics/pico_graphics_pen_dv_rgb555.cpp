@@ -139,7 +139,7 @@ namespace pimoroni {
             }
 
             // Write the row out while we loop on to the next
-            driver.raw_write_async(prev_address, (uint32_t*)wbuf, row_len_in_words);
+            driver.raw_write_async_bytes(prev_address, (uint32_t*)wbuf, bounds.w << 1);
         }
 
         // Wait for the last write to finish as we are writing from stack
