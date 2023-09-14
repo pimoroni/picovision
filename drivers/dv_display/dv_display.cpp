@@ -559,22 +559,26 @@ namespace pimoroni {
 
   void DVDisplay::set_sprite(int sprite_num, uint16_t sprite_data_idx, const Point &p, SpriteBlendMode blend_mode, int v_scale)
   {
-    uint8_t buf[7];
-    buf[0] = (uint8_t)blend_mode | ((v_scale - 1) << 3);
-    buf[1] = sprite_data_idx & 0xff;
-    buf[2] = sprite_data_idx >> 8;
-    buf[3] = p.x & 0xff;
-    buf[4] = p.x >> 8;
-    buf[5] = p.y & 0xff;
-    buf[6] = p.y >> 8;
+    if (sprite_num < MAX_DISPLAYED_SPRITES) {
+      uint8_t buf[7];
+      buf[0] = (uint8_t)blend_mode | ((v_scale - 1) << 3);
+      buf[1] = sprite_data_idx & 0xff;
+      buf[2] = sprite_data_idx >> 8;
+      buf[3] = p.x & 0xff;
+      buf[4] = p.x >> 8;
+      buf[5] = p.y & 0xff;
+      buf[6] = p.y >> 8;
 
-    i2c->write_bytes(I2C_ADDR, sprite_num, buf, 7);
+      i2c->write_bytes(I2C_ADDR, sprite_num, buf, 7);
+    }
   }
 
   void DVDisplay::clear_sprite(int sprite_num)
   {
-    uint8_t buf[3] = {1, 0xFF, 0xFF};
-    i2c->write_bytes(I2C_ADDR, sprite_num, buf, 3);
+    if (sprite_num < MAX_DISPLAYED_SPRITES) {
+      uint8_t buf[3] = {1, 0xFF, 0xFF};
+      i2c->write_bytes(I2C_ADDR, sprite_num, buf, 3);
+    }
   }
 
   uint32_t DVDisplay::point_to_address(const Point& p) const {
