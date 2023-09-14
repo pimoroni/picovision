@@ -1,12 +1,12 @@
 import time
 import gc
 
-from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555
+from picographics import PicoGraphics, PEN_RGB555
 from picovector import PicoVector, Polygon, RegularPolygon, Rectangle, ANTIALIAS_X16
 
 # machine.freq(168_000_000)
 
-display = PicoGraphics(DISPLAY_PICOVISION, width=720, height=480, pen_type=PEN_DV_RGB555)
+display = PicoGraphics(PEN_RGB555, 720, 480)
 
 vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_X16)

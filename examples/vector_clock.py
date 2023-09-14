@@ -1,14 +1,14 @@
 import time
 import gc
 
-from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555
-from picovector import PicoVector, Polygon, RegularPolygon, Rectangle, ANTIALIAS_X4
+from picographics import PicoGraphics, PEN_RGB555
+from picovector import PicoVector, Polygon, RegularPolygon, Rectangle, ANTIALIAS_X16
 
 
-display = PicoGraphics(DISPLAY_PICOVISION, width=720, height=480, pen_type=PEN_DV_RGB555)
+display = PicoGraphics(PEN_RGB555, 720, 480)
 
 vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_X4)
+vector.set_antialiasing(ANTIALIAS_X16)
 
 RED = display.create_pen(200, 0, 0)
 BLACK = display.create_pen(0, 0, 0)
