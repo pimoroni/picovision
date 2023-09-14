@@ -167,6 +167,8 @@ namespace pimoroni {
       // 24bpp interface
       void write_pixel(const Point &p, RGB888 colour);
       void write_pixel_span(const Point &p, uint l, RGB888 colour);
+      void write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
+      void read_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
 
       bool init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
       void flip();
