@@ -94,7 +94,7 @@ In addition to colour, you can set the "depth" of a pen, putting drawn pixels be
 First, some terms-
 
 * Image Index - an index to identify where sprite image data should be stored
-* Sprite Slot - a single, hardware sprite. There are up to 32 (or 16 on widescreen versions).
+* Sprite Slot - a single, hardware sprite. There are up to 80 (or 32 on widescreen versions).
 
 ### Loading Sprites
 
@@ -148,7 +148,7 @@ Once displayed the sprite will continue to display at its given X and Y coordina
 display.clear_sprite(SPRITE_SLOT)
 ```
 
-The current maximim size for a sprite is 2k, which corresponds to a 32x32 pixel image, however there are no restrictions on width/height so non-square images exceeding one of these dimensions and making up for it in the other is fine- so long as they don't exceed 2k.
+Sprite images can be up to 64x32 big, but if the data is larger than 2kB then the following image index is not usable.  For example, if you load a 4kB (64x32) sprite into image index 1 you must not use image index 2.
 
 ## Advanced Features
 
