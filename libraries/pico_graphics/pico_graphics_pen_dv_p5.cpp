@@ -22,6 +22,9 @@ namespace pimoroni {
     void PicoGraphics_PenDV_P5::set_pen(uint c) {
         color = c & 0x1f;
     }
+    void PicoGraphics_PenDV_P5::set_depth(uint8_t new_depth) {
+        depth = new_depth > 0 ? 1 : 0;
+    }
     void PicoGraphics_PenDV_P5::set_pen(uint8_t r, uint8_t g, uint8_t b) {
         uint8_t current_palette = driver.get_local_palette_index();
         RGB888 *driver_palette = driver.get_palette(current_palette);
@@ -66,11 +69,11 @@ namespace pimoroni {
         return i;
     }
     void PicoGraphics_PenDV_P5::set_pixel(const Point &p) {
-        driver.write_palette_pixel(p, color << 2);
+        driver.write_palette_pixel(p, (color << 2) | depth);
     }
 
     void PicoGraphics_PenDV_P5::set_pixel_span(const Point &p, uint l) {
-        driver.write_palette_pixel_span(p, l, color << 2);
+        driver.write_palette_pixel_span(p, l, (color << 2) | depth);
     }
 
     void PicoGraphics_PenDV_P5::get_dither_candidates(const RGB &col, const RGB *palette, size_t len, std::array<uint8_t, 16> &candidates) {

@@ -777,6 +777,14 @@ mp_obj_t ModPicoGraphics_set_blend_mode(mp_obj_t self_in, mp_obj_t pen) {
     return mp_const_none;
 }
 
+mp_obj_t ModPicoGraphics_set_depth(mp_obj_t self_in, mp_obj_t depth) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+
+    self->graphics->set_depth(mp_obj_get_int(depth));
+
+    return mp_const_none;
+}
+
 mp_obj_t ModPicoGraphics_reset_pen(mp_obj_t self_in, mp_obj_t pen) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
 

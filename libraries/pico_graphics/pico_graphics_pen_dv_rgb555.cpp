@@ -20,6 +20,9 @@ namespace pimoroni {
     void PicoGraphics_PenDV_RGB555::set_bg(uint c) {
         background = c;
     }
+    void PicoGraphics_PenDV_RGB555::set_depth(uint8_t new_depth) {
+        depth = new_depth > 0 ? 0x8000 : 0;
+    }
     void PicoGraphics_PenDV_RGB555::set_pen(uint8_t r, uint8_t g, uint8_t b) {
         RGB src_color{r, g, b};
         color = src_color.to_rgb555(); 
@@ -31,10 +34,10 @@ namespace pimoroni {
         return RGB::from_hsv(h, s, v).to_rgb555();
     }
     void PicoGraphics_PenDV_RGB555::set_pixel(const Point &p) {
-        driver.write_pixel(p, color);
+        driver.write_pixel(p, (uint16_t)(color | depth));
     }
     void PicoGraphics_PenDV_RGB555::set_pixel_span(const Point &p, uint l) {
-        driver.write_pixel_span(p, l, color);
+        driver.write_pixel_span(p, l, (uint16_t)(color | depth));
     }
     void PicoGraphics_PenDV_RGB555::set_pixel_alpha(const Point &p, const uint8_t a) {
         uint16_t src = background;
