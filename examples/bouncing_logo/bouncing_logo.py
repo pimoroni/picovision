@@ -1,7 +1,7 @@
 import time
 import random
 import errno
-from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555 as PEN
+from picographics import PicoGraphics, PEN_RGB555
 from machine import Pin
 
 """
@@ -12,7 +12,7 @@ Press Y to add logo images to the screen
 """
 
 # set up the display and drawing variables
-display = PicoGraphics(DISPLAY_PICOVISION, width=640, height=480, pen_type=PEN)
+display = PicoGraphics(PEN_RGB555, 640, 480)
 
 WIDTH, HEIGHT = display.get_bounds()
 BLACK = display.create_pen(0, 0, 0)
@@ -44,7 +44,7 @@ try:
 
     has_sprite = True
 except OSError as ioe:
-    if ioe.errno not in (errno.ENOENT):
+    if ioe.errno != errno.ENOENT:
         raise
     has_sprite = False
 
