@@ -24,9 +24,9 @@ namespace pimoroni {
     static constexpr int NUM_PALETTES = 2;
 
 #if SUPPORT_WIDE_MODES
-    static constexpr int MAX_DISPLAYED_SPRITES = 16;
-#else
     static constexpr int MAX_DISPLAYED_SPRITES = 32;
+#else
+    static constexpr int MAX_DISPLAYED_SPRITES = 80;
 #endif
 
     enum Mode {
