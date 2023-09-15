@@ -68,7 +68,7 @@ Since the PSRAM frame buffers are larger than necessary for storing frame data, 
 
 ### Sprites
 
-The RP2040 serving as a GPU on PicoVision supports blending a handful of additional images over your frame data. These are called sprites.
+The RP2040 serving as a GPU on PicoVision supports blending a handful of additional images over your frame data. These are called sprites.  Sprites are currently only available in RGB555 and P5 modes.
 
 A sprite refers to a single slot on the GPU, which is capable of displaying an image at a specific X/Y coordinate with vertical scaling and blend options.
 
@@ -90,6 +90,29 @@ In summary:
 4. Sprite images are stored in PSRAM in "indexed" locations
 5. A single sprite, referenced by its "slot", specifies an index for the image data, X and Y coordinates, vertical scale and blend mode
 6. Larger images can be used, but will occupy more of the 64kB active sprite data and so potentially limit you to fewer sprites
+
+#### Sprite blending
+
+The blend mode on each sprite slot controls how the sprite image data is overlayed on to the canvas.  For all modes except overwrite, the alpha bit in the sprite controls whether or not the pixel from the sprite is used.
+
+The available modes are:
+
+| Mode | Meaning |
+| ---- | ------- |
+| OVERWRITE | The sprite overwrites the canvas with no checking of alpha bits |
+| UNDER     | Each pixel from the sprite overwrites the corresponding pixel in the canvas if the alpha bit on the sprite is 1 and the alpha bit on the canvas is 0. |
+| OVER      | Each pixel from the sprite overwrites the corresponding pixel in the canvas if the alpha bit on the sprite is 1, regardless of the canvas alpha. |
+| BLEND_UNDER | Each pixel from the sprite is blended with the corresponding pixel in the canvas if the alpha bit on the sprite is 1 and the alpha bit on the canvas is 0. |
+| BLEND_OVER  | Each pixel from the sprite is blended with the corresponding pixel in the canvas if the alpha bit on the sprite is 1, regardless of the canvas alpha. |
+
+The "under" modes allow sprites to go behind a part of the image that is on the canvas.  The "over" modes allow sprites to go in front of the canvas regardless of the alpha setting.  This allows you to create 4 depth levels in your scene, going from "back" to "front" they are:
+
+1. Parts of the canvas image, drawn from PicoGraphics, with canvas alpha set to 0.
+2. Sprites drawn in under mode
+3. Parts of the canvas image, drawn from PicoGraphics, with canvas alpha set to 1.
+4. Sprites drawn in over mode
+
+The "blend" modes allow sprites to be drawn "semi-transparent".  These are only valid in RGB555 mode.  For each component of the colour (red, green and blue), the blend function takes the average of the sprite and canvas colours.
 
 #### PicoVision Sprite .pvs Format
 
