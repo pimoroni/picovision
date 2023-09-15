@@ -223,6 +223,8 @@ namespace pimoroni {
       void set_scroll_idx_for_lines(int idx, int miny, int maxy);
 
       uint8_t get_gpio();
+
+      // The "Hi" GPIO are marked: CK, CS, D0, D1, D2, D3, D+, D-
       uint8_t get_gpio_hi();
       void set_gpio_hi_dir(uint pin, bool output);
       void set_gpio_hi_dir_all(uint8_t output_enables);
@@ -234,8 +236,8 @@ namespace pimoroni {
       void set_gpio_hi_pull_down_all(uint8_t vals);
       float get_gpu_temp();  // in C
 
-      bool is_button_b_pressed() { return (get_gpio() & 0x1) != 0x1; }
-      bool is_button_c_pressed() { return (get_gpio() & 0x2) != 0x2; }
+      bool is_button_x_pressed() { return (get_gpio() & 0x1) != 0x1; }
+      bool is_button_a_pressed() { return (get_gpio() & 0x2) != 0x2; }
 
       // Valid LED levels are from 0-127.
       void set_led_level(uint8_t level);
