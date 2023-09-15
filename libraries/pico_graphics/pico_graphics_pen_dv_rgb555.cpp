@@ -108,7 +108,7 @@ namespace pimoroni {
                 for (int32_t x = 0; x < bounds.w; ++x) {
                     uint8_t alpha = *alpha_ptr++;
                     if (alpha >= alpha_max) {
-                        wbuf[x] = color;
+                        wbuf[x] = (uint16_t)(color | depth);
                     } else if (alpha > 0) {
                         alpha = alpha_map[alpha];
 
@@ -117,7 +117,7 @@ namespace pimoroni {
                         // Who said Cortex-M0 can't do SIMD?
                         const uint32_t src_expanded = (uint32_t(src & 0x7C00) << 10) | (uint32_t(src & 0x3E0) << 5) | (src & 0x1F);
                         const uint32_t blended = src_expanded * (16 - alpha) + colour_expanded * alpha;
-                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F);
+                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F) | (alpha > 7 ? depth : (src & 0x8000));
                     }
 
                     // Halfway through processing this row switch from writing previous row to reading the next
@@ -129,12 +129,12 @@ namespace pimoroni {
                 for (int32_t x = 0; x < bounds.w; ++x) {
                     uint8_t alpha = *alpha_ptr++;
                     if (alpha >= alpha_max) {
-                        wbuf[x] = color;
+                        wbuf[x] = (uint16_t)(color | depth);
                     } else if (alpha > 0) {
                         alpha = alpha_map[alpha];
 
                         const uint32_t blended = background_expanded * (16 - alpha) + colour_expanded * alpha;
-                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F);
+                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F) | (alpha > 7 ? depth : 0);
                     } else {
                         wbuf[x] = background;
                     }
