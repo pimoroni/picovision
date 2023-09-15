@@ -167,6 +167,8 @@ namespace pimoroni {
       // 24bpp interface
       void write_pixel(const Point &p, RGB888 colour);
       void write_pixel_span(const Point &p, uint l, RGB888 colour);
+      void write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
+      void read_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
 
       bool init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
       void flip();
@@ -247,6 +249,7 @@ namespace pimoroni {
       int frame_row_stride() const { return (int)frame_width * 6; }
       void raw_read_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.read(address, data, len_in_words); }
       void raw_write_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.write(address, data, len_in_words << 2); }
+      void raw_write_async_bytes(uint32_t address, uint32_t* data, uint32_t len_in_bytes) { ram.write(address, data, len_in_bytes); }
       void raw_wait_for_finish_blocking() { ram.wait_for_finish_blocking(); }
 
     protected:

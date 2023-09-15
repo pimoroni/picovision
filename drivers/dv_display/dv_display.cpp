@@ -48,6 +48,12 @@ namespace pimoroni {
       h_repeat = 2;
       full_width *= 2;
     }
+
+    if (mode_ == MODE_RGB888 && h_repeat == 1) {
+      // Mode is unsupported
+      return false;
+    }
+
     if (display_height < 400) {
       v_repeat = 2;
       full_height *= 2;
@@ -56,7 +62,7 @@ namespace pimoroni {
     if (full_width == 640) {
       res_mode = RESOLUTION_640x480;
     }
-    else if (full_width == 720 && mode_ != MODE_RGB888 ) {
+    else if (full_width == 720) {
       if (full_height == 480) res_mode = RESOLUTION_720x480;
       else if (full_height == 400) res_mode = RESOLUTION_720x400;
       else if (full_height == 576) res_mode = RESOLUTION_720x576;
@@ -146,6 +152,7 @@ namespace pimoroni {
 
     if (rewrite_header) {
       set_scroll_idx_for_lines(-1, 0, display_height);
+      write_sprite_table();
       rewrite_header = false;
     }
   }
@@ -396,8 +403,32 @@ namespace pimoroni {
     if (mode == MODE_PALETTE) {
       rewrite_palette = 2;
     }
+    write_sprite_table();
   }
   
+  void DVDisplay::write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data)
+  {
+    uint32_t offset = 0;
+    uint32_t address = point_to_address24(p);
+    uint l = len_in_pixels * 3;
+    if (((uintptr_t)data & 0x3) != 0 && l > 0) {
+      uint32_t val = data[0] | (data[1] << 8) | (data[2] << 16);
+      offset = 4 - ((uintptr_t)data & 0x3);
+      ram.write(address, &val, offset);
+      l -= offset;
+      address += offset;
+      ram.wait_for_finish_blocking();
+    }
+    if (l > 0) {
+      ram.write(address, (uint32_t*)(data + offset), l);
+    }
+  }
+
+  void DVDisplay::read_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data)
+  {
+    read(point_to_address24(p), len_in_pixels * 3, data);
+  }
+
   void DVDisplay::set_palette(RGB888 new_palette[PALETTE_SIZE], int palette_idx)
   {
     for (int i = 0; i < PALETTE_SIZE; ++i) {
@@ -460,16 +491,18 @@ namespace pimoroni {
   
   void DVDisplay::write_palette_pixel_span(const Point &p, uint l, uint8_t* data)
   {
-    uint32_t offset = 0;
-    while (((uintptr_t)data & 0x3) != 0 && l > 0) {
-      uint32_t val = *data++;
-      ram.write(point_to_address_palette(p), &val, 1);
-      --l;
-      offset++;
+    uint offset = 0;
+    uint32_t address = point_to_address_palette(p);
+    if (((uintptr_t)data & 0x3) != 0 && l > 0) {
+      uint32_t val = data[0] | (data[1] << 8) | (data[2] << 16);
+      offset = 4 - ((uintptr_t)data & 0x3);
+      ram.write(address, &val, std::min(offset, l));
+      l -= offset;
+      address += offset;
       ram.wait_for_finish_blocking();
     }
     if (l > 0) {
-      ram.write(point_to_address_palette(p) + offset, (uint32_t*)data, l);
+      ram.write(address, (uint32_t*)(data + offset), l);
     }
   }
   
