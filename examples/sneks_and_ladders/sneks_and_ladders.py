@@ -122,11 +122,11 @@ def draw_level():
     AAAAHL = display.load_animation(animation_data_slot, animations, pvgame.TILE_SIZE, source=(80, 0, 16, 80))
 
     # Everything but the fire
-    display.set_scroll_index_for_lines(1, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
-    display.set_scroll_index_for_lines(2, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
+    display.set_scroll_group_for_lines(1, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
+    display.set_scroll_group_for_lines(2, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
 
     # For scrolling the fire
-    display.set_scroll_index_for_lines(3, DISPLAY_HEIGHT - pvgame.TILE_H, DISPLAY_HEIGHT)
+    display.set_scroll_group_for_lines(3, DISPLAY_HEIGHT - pvgame.TILE_H, DISPLAY_HEIGHT)
 
     # This sequence is repeated horizontally
     fire_tilemap = [0, 2, 1, 4, 3]
@@ -245,7 +245,7 @@ t_start = time.time()
 while True:
     fire_x = int(time.ticks_ms() / 200) % FIRE_FRAMES
     fire_x *= SPRITE_W * FIRE_FRAMES
-    display.set_display_offset(fire_x, 0, 3)
+    display.set_scroll_group_offset(3, fire_x, 0)
 
     t = int(time.ticks_ms() / 250)
 

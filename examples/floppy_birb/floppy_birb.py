@@ -3,13 +3,10 @@ import math
 import random
 import machine
 import gc
-import cppmem
 import pngdec
 from picographics import PicoGraphics, PEN_RGB555, WIDESCREEN
 from picovector import PicoVector, Polygon, ANTIALIAS_X16
 
-
-cppmem.set_mode(cppmem.MICROPYTHON)
 
 display = PicoGraphics(PEN_RGB555, 720, 480, frame_width=720 * 2, frame_height=480)
 png = pngdec.PNG(display)
@@ -112,15 +109,15 @@ t_start = 0
 
 for _ in range(2):
     # Scroll position two for fixed top/bottom
-    display.set_scroll_index_for_lines(2, 0, GAME_TOP - 20)
-    display.set_scroll_index_for_lines(2, GAME_BOTTOM + 20, HEIGHT)
+    display.set_scroll_group_for_lines(2, 0, GAME_TOP - 20)
+    display.set_scroll_group_for_lines(2, GAME_BOTTOM + 20, HEIGHT)
 
     # For scrolling borders along the top/bottom
-    display.set_scroll_index_for_lines(1, GAME_TOP - 20, GAME_TOP)
-    display.set_scroll_index_for_lines(1, GAME_BOTTOM, GAME_BOTTOM + 20)
+    display.set_scroll_group_for_lines(1, GAME_TOP - 20, GAME_TOP)
+    display.set_scroll_group_for_lines(1, GAME_BOTTOM, GAME_BOTTOM + 20)
 
     # For scrolling the sky/ground behind the pipes
-    display.set_scroll_index_for_lines(3, GAME_TOP, GAME_BOTTOM)
+    display.set_scroll_group_for_lines(3, GAME_TOP, GAME_BOTTOM)
 
     display.update()
 
@@ -340,8 +337,8 @@ def main_game_running(t_current):
 
     level_offset = int(current_x / SLICE_WIDTH)
 
-    display.set_display_offset(current_x % GAME_WIDTH, 0, 1)
-    display.set_display_offset(cloud_x % GAME_WIDTH, 0, 3)
+    display.set_scroll_group_offset(1, current_x % GAME_WIDTH, 0)
+    display.set_scroll_group_offset(3, cloud_x % GAME_WIDTH, 0)
 
     spritelist.clear()
 
