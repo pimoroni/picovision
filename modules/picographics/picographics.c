@@ -65,8 +65,8 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_bg), MP_ROM_PTR(&ModPicoGraphics_set_bg_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_blend_mode), MP_ROM_PTR(&ModPicoGraphics_set_blend_mode_obj) },
 
-    { MP_ROM_QSTR(MP_QSTR_set_display_offset), MP_ROM_PTR(&ModPicoGraphics_set_display_offset_obj) },
-    { MP_ROM_QSTR(MP_QSTR_set_scroll_index_for_lines), MP_ROM_PTR(&ModPicoGraphics_set_scroll_index_for_lines_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_scroll_group_offset), MP_ROM_PTR(&ModPicoGraphics_set_display_offset_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_scroll_group_for_lines), MP_ROM_PTR(&ModPicoGraphics_set_scroll_index_for_lines_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&ModPicoGraphics_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_clip), MP_ROM_PTR(&ModPicoGraphics_set_clip_obj) },
