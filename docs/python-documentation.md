@@ -3,13 +3,24 @@
 PicoVision uses a custom version of PicoGraphics that includes some new methods for working with the "GPU" features.
 
 - [Getting Started](#getting-started)
+  - [Differences from PicoGraphics](#differences-from-picographics)
   - [Display Resolutions \& Pen Types](#display-resolutions--pen-types)
     - [Modes](#modes)
 - [Sprites](#sprites)
   - [Loading Sprites](#loading-sprites)
 - [Frame vs Display](#frame-vs-display)
 
-## Getting Started 
+## Getting Started
+
+### Differences from PicoGraphics
+
+PicoVision is loosely based on [PicoGraphics](https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/modules/picographics/README.md), but has some caveats that apply uniquely to PicoVision.
+
+Most notably, PicoVision is backed by two *physical* PSRAM buffers, which also serve double-duty as storage for sprite data.
+
+This means that when you load sprites you must load them into both buffers, the [Loading Sprites](#loading-sprites) goes into this in more detail.
+
+It also means that the buffer you get back from the GPU will usually be "stale." This means it's filled with the contents of your last frame.
 
 ### Display Resolutions & Pen Types
 
