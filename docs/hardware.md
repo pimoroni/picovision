@@ -73,24 +73,24 @@ The RP2040 serving as a GPU on PicoVision supports blending a handful of additio
 
 A sprite refers to a single slot on the GPU, which is capable of displaying an image at a specific X/Y coordinate with vertical scaling and blend options.
 
-The number of sprites you can display at once is governed by the size of the GPU's active sprite buffer. This buffer is 64kB (or 32kB in a widescreen build) and is used to load all of the active sprites into RAM during VSync so they can be blended into the frame scanline by scanline- chasing the beam.
+The number of sprites you can display at once is governed by the size of the GPU's active sprite buffer. This buffer is 56kB (or 20kB in a widescreen build) and is used to load all of the active sprites into RAM during VSync so they can be blended into the frame scanline by scanline- chasing the beam.
 
-There is, additionally, a hard limit of 32 sprites. (TODO: Can we raise this to 128 with 16x16 pixel sprites assumed to be the canonical size, to match the optimised Tilemap rendering? This really opens the door for sprite powered games)
+There is, additionally, a hard limit of 80 sprites (32 in a widescreen build).
 
-Each sprite can reference an image up to 8kB in size, this equates to 64x64 pixels in RGB555 mode. Larger sprites will occupy more of the active sprite buffer and permit fewer similtaneous active sprites. In fact with 8kB, 64x64 pixel sprites you would be limited to only eight onscreen sprites at once.
+Each sprite can reference an image up to 4kB in size, this equates to 64x32 pixels in RGB555 mode. Larger sprites will occupy more of the active sprite buffer and permit fewer similtaneous active sprites.  Roughly speaking, you can get about 80 16x16 sprites or 35 32x32 sprites on screen at once before starting to exceed the available clock cycles on the GPU - if that happens red lines will be displayed.  Displaying multiple copies of the same sprite is slightly cheaper than displaying different sprites, and a given sprite image is only copied to the active sprite buffer once no matter how many times it's displayed.
 
-Larger images also occupy more consecutive image indices, for example a 64x64 (8kB) image loaded at slot 1 would occupy indices 1, 2, 3 and 4. (TODO: If we raise the sprite limit and assume 16x16 then sprites will occupy more slots, I think we should make this work like `create_pen` and simply have `load_sprite` return the relevant slot IDs. This would tie into `load_animation` which would also have to work out the correct slot IDs based on image size so it would be ideal if the DVDisplay driver itself kept track of this, making `define_sprite` return the relevant starting index- I'm not sure how this would work across the two, potentially and maybe deliberately out of sync PSRAM buffers.)
+Larger images also occupy more consecutive image indices, for example a 64x32 (4kB) image loaded at slot 1 would occupy indices 1, and 2. (TODO: If we raise the sprite limit and assume 16x16 then sprites will occupy more slots, I think we should make this work like `create_pen` and simply have `load_sprite` return the relevant slot IDs. This would tie into `load_animation` which would also have to work out the correct slot IDs based on image size so it would be ideal if the DVDisplay driver itself kept track of this, making `define_sprite` return the relevant starting index- I'm not sure how this would work across the two, potentially and maybe deliberately out of sync PSRAM buffers. Mike: Yes I originally started implementing it like this but because of the two buffers I fell back on forcing the user to handle it)
 
-Displaying this 64x64 image will have the same cost as displaying four 32x32 pixel sprites, limiting you to fewer consecutive onscreen sprites than the normal 32 (or 16) limit. You can balance this with smaller sprites to return to the 32x32 limit.
+Displaying this 64x32 image will have the same cost as displaying four 32x32 pixel sprites, limiting you to fewer consecutive onscreen sprites than the normal 32 (or 16) limit. You can balance this with smaller sprites to return to the 32x32 limit.
 
 In summary:
 
-1. There's a hard limit of 32 sprites on screen and a total of 64kB active sprite data
+1. There's a hard limit of 80 sprites on screen and a total of 56kB active sprite data
 2. There's a hard limit of 10 simultaneous sprites per scanline
-3. Each sprite can be up to 8kB in size, with a maximum width or height of 64 pixels
+3. Each sprite can be up to 4kB in size, with a maximum width of 64 pixelse and height of 32 pixels
 4. Sprite images are stored in PSRAM in "indexed" locations
 5. A single sprite, referenced by its "slot", specifies an index for the image data, X and Y coordinates, vertical scale and blend mode
-6. Larger images can be used, but will occupy more of the 64kB active sprite data and so potentially limit you to fewer sprites
+6. Larger images can be used, but will occupy more of the 56kB active sprite data and so potentially limit you to fewer sprites
 
 #### Sprite blending
 
