@@ -1,36 +1,6 @@
 #include "py/runtime.h"
 #include "py/objstr.h"
 
-enum PicoGraphicsDisplay {
-    DISPLAY_LCD_240X240=0,
-    DISPLAY_ROUND_LCD_240X240,
-    DISPLAY_PICO_DISPLAY,
-    DISPLAY_PICO_DISPLAY_2,
-    DISPLAY_PICO_EXPLORER,
-    DISPLAY_TUFTY_2040,
-    DISPLAY_ENVIRO_PLUS,
-    DISPLAY_LCD_160X80,
-    DISPLAY_I2C_OLED_128X128,
-    DISPLAY_INKY_PACK,
-    DISPLAY_INKY_FRAME,
-    DISPLAY_INKY_FRAME_4,
-    DISPLAY_GALACTIC_UNICORN,
-    DISPLAY_GFX_PACK,
-    DISPLAY_INTERSTATE75_32X32,
-    DISPLAY_INTERSTATE75_64X32,
-    DISPLAY_INTERSTATE75_96X32,
-    DISPLAY_INTERSTATE75_128X32,
-    DISPLAY_INTERSTATE75_64X64,
-    DISPLAY_INTERSTATE75_128X64,
-    DISPLAY_INTERSTATE75_192X64,
-    DISPLAY_INTERSTATE75_256X64,
-    DISPLAY_INKY_FRAME_7,
-    DISPLAY_COSMIC_UNICORN,
-    DISPLAY_UNICORN_PACK,
-    DISPLAY_SCROLL_PACK,
-    DISPLAY_PICOVISION
-};
-
 enum PicoGraphicsPenType {
     PEN_1BIT = 0,
     PEN_3BIT,
@@ -57,15 +27,13 @@ enum PicoGraphicsBusType {
 extern const mp_obj_type_t ModPicoGraphics_type;
 
 // Module functions
-extern mp_obj_t ModPicoGraphics_module_RGB_to_RGB332(mp_obj_t r, mp_obj_t g, mp_obj_t b);
-extern mp_obj_t ModPicoGraphics_module_RGB_to_RGB565(mp_obj_t r, mp_obj_t g, mp_obj_t b);
-extern mp_obj_t ModPicoGraphics_module_RGB332_to_RGB(mp_obj_t rgb332);
-extern mp_obj_t ModPicoGraphics_module_RGB565_to_RGB(mp_obj_t rgb565);
 extern mp_obj_t ModPicoGraphics_get_required_buffer_size(mp_obj_t display_in, mp_obj_t pen_type_in);
 
 // DV Display specific functions
 extern mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 extern mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_t *args);
+extern mp_obj_t ModPicoGraphics_tilemap(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
+extern mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 
 // Class methods
 extern mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
@@ -80,6 +48,9 @@ extern mp_obj_t ModPicoGraphics_update_pen(size_t n_args, const mp_obj_t *args);
 extern mp_obj_t ModPicoGraphics_reset_pen(mp_obj_t self_in, mp_obj_t pen);
 extern mp_obj_t ModPicoGraphics_set_palette(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 extern mp_obj_t ModPicoGraphics_hsv_to_rgb(size_t n_args, const mp_obj_t *args);
+
+extern mp_obj_t ModPicoGraphics_set_remote_palette(mp_obj_t self_in, mp_obj_t index);
+extern mp_obj_t ModPicoGraphics_set_local_palette(mp_obj_t self_in, mp_obj_t index);
 
 // Pen
 extern mp_obj_t ModPicoGraphics_set_pen(mp_obj_t self_in, mp_obj_t pen);
@@ -104,7 +75,7 @@ extern mp_obj_t ModPicoGraphics_line(size_t n_args, const mp_obj_t *args);
 
 // Sprites
 extern mp_obj_t ModPicoGraphics_load_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
-extern mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *args);
+extern mp_obj_t ModPicoGraphics_display_sprite(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 extern mp_obj_t ModPicoGraphics_clear_sprite(mp_obj_t self_in, mp_obj_t slot);
 
 // Utility
