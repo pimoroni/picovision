@@ -62,6 +62,9 @@ extern mp_obj_t ModPicoGraphics_set_thickness(mp_obj_t self_in, mp_obj_t thickne
 extern mp_obj_t ModPicoGraphics_set_bg(mp_obj_t self_in, mp_obj_t pen);
 extern mp_obj_t ModPicoGraphics_set_blend_mode(mp_obj_t self_in, mp_obj_t pen);
 
+// Depth
+extern mp_obj_t ModPicoGraphics_set_depth(mp_obj_t self_in, mp_obj_t depth);
+
 // Primitives
 extern mp_obj_t ModPicoGraphics_set_clip(size_t n_args, const mp_obj_t *args);
 extern mp_obj_t ModPicoGraphics_remove_clip(mp_obj_t self_in);

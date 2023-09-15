@@ -14,8 +14,9 @@ namespace pimoroni {
 
       void set_blend_mode(BlendMode mode) {
         blend_mode = mode;
-      };
+      }
 
+      virtual void set_depth(uint8_t new_depth) {}
       virtual void set_bg(uint c) {};
 
       PicoGraphicsDV(uint16_t width, uint16_t height, DVDisplay &dv_display)
@@ -30,10 +31,12 @@ namespace pimoroni {
     public:
       RGB555 color;
       RGB555 background;
+      uint16_t depth = 0;
 
       PicoGraphics_PenDV_RGB555(uint16_t width, uint16_t height, DVDisplay &dv_display);
       void set_pen(uint c) override;
       void set_bg(uint c) override;
+      void set_depth(uint8_t new_depth) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen_hsv(float h, float s, float v) override;
@@ -78,6 +81,7 @@ namespace pimoroni {
     public:
       static const uint16_t palette_size = 32;
       uint8_t color;
+      uint8_t depth = 0;
       bool used[2][palette_size];
 
       std::array<std::array<uint8_t, 16>, 512> candidate_cache;
@@ -88,6 +92,7 @@ namespace pimoroni {
       PicoGraphics_PenDV_P5(uint16_t width, uint16_t height, DVDisplay &dv_display);
       void set_pen(uint c) override;
       void set_pen(uint8_t r, uint8_t g, uint8_t b) override;
+      void set_depth(uint8_t new_depth) override;
       int update_pen(uint8_t i, uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen(uint8_t r, uint8_t g, uint8_t b) override;
       int create_pen_hsv(float h, float s, float v) override;

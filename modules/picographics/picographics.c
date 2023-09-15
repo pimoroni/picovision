@@ -27,6 +27,9 @@ MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_thickness_obj, ModPicoGraphics_set
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_bg_obj, ModPicoGraphics_set_bg);
 MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_blend_mode_obj, ModPicoGraphics_set_blend_mode);
 
+// Depth
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_set_depth_obj, ModPicoGraphics_set_depth);
+
 // Primitives
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ModPicoGraphics_set_clip_obj, 5, 5, ModPicoGraphics_set_clip);
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_remove_clip_obj, ModPicoGraphics_remove_clip);
@@ -64,6 +67,8 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_set_bg), MP_ROM_PTR(&ModPicoGraphics_set_bg_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_blend_mode), MP_ROM_PTR(&ModPicoGraphics_set_blend_mode_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_set_depth), MP_ROM_PTR(&ModPicoGraphics_set_depth_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_set_scroll_group_offset), MP_ROM_PTR(&ModPicoGraphics_set_display_offset_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_scroll_group_for_lines), MP_ROM_PTR(&ModPicoGraphics_set_scroll_index_for_lines_obj) },
@@ -135,6 +140,12 @@ STATIC const mp_map_elem_t picographics_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_BLEND_TARGET), MP_ROM_INT(0) },
     { MP_ROM_QSTR(MP_QSTR_BLEND_FIXED), MP_ROM_INT(1) },
+
+    { MP_ROM_QSTR(MP_QSTR_SPRITE_OVERWRITE), MP_ROM_INT(0) },
+    { MP_ROM_QSTR(MP_QSTR_SPRITE_UNDER), MP_ROM_INT(1) },
+    { MP_ROM_QSTR(MP_QSTR_SPRITE_OVER), MP_ROM_INT(2) },
+    { MP_ROM_QSTR(MP_QSTR_SPRITE_BLEND_UNDER), MP_ROM_INT(3) },
+    { MP_ROM_QSTR(MP_QSTR_SPRITE_BLEND_OVER), MP_ROM_INT(4) },
 
 #if SUPPORT_WIDE_MODES
     { MP_ROM_QSTR(MP_QSTR_WIDESCREEN), MP_ROM_TRUE },
