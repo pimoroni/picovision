@@ -102,8 +102,9 @@ class Logo:
                 self.y_start + SUB_IMAGE_SIZE,
             )
         else:
-            display.rectangle(self.x_start, self.y_start, 100, 100)
             display.set_pen(WHITE)
+            display.rectangle(self.x_start, self.y_start, 100, 100)
+            display.set_pen(BLACK)
             display.text(
                 "File not found",
                 self.x_start,
