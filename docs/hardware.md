@@ -11,6 +11,7 @@ The two PSRAMs act as a front and back buffer. While the "CPU" (the Pico W) writ
     - [Pixel-doubled Resolutions](#pixel-doubled-resolutions)
     - [Frame vs Display](#frame-vs-display)
   - [Sprites](#sprites)
+    - [Sprite blending](#sprite-blending)
     - [PicoVision Sprite .pvs Format](#picovision-sprite-pvs-format)
   - [Scanlines](#scanlines)
 
