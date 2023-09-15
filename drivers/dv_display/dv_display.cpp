@@ -502,7 +502,7 @@ namespace pimoroni {
   void DVDisplay::write_header()
   {
     write_header_preamble();
-    set_scroll_idx_for_lines(1, 0, display_height);
+    set_scroll_idx_for_lines(0, 0, display_height);
     write_sprite_table();
   }
 
