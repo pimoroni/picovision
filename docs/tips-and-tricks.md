@@ -8,7 +8,7 @@ PicoVision allows you to work with a drawing canvas that's larger than your scre
 
 Each scanline can be assigned to an individual scroll offset, and there's no requirement for these to be contigous.
 
-To set up scroll offsets you must use the `set_scroll_index_for_lines` method, this takex an index (either 1, 2 or 3) and the lines you want to assign to it.
+To set up scroll offsets you must use the `set_scroll_index_for_lines` method, this takes a group number (0-3, group 0 can't be scrolled) and the lines you want to assign to it.
 
 For example, slicing a 320x240 screen into three equal portions, each with their own scroll index, might look like this:
 
@@ -32,12 +32,12 @@ If we put this together, we can scroll three lines of text across the screen wit
 import time
 import math
 
-from picographics import PicoGraphics, DISPLAY_PICOVISION, PEN_DV_RGB555
+from picographics import PicoGraphics, PEN_RGB555
 
 WIDTH = 320
 HEIGHT = 240
 
-display = PicoGraphics(DISPLAY_PICOVISION, width=WIDTH, height=HEIGHT, frame_width=WIDTH * 2, frame_height=HEIGHT, pen_type=PEN_DV_RGB555)
+display = PicoGraphics(width=WIDTH, height=HEIGHT, frame_width=WIDTH * 2, frame_height=HEIGHT, pen_type=PEN_RGB555)
 
 TEXT = "Hello World"
 TEXT_SCALE = 3

@@ -71,6 +71,8 @@ display.set_scroll_index_for_lines(2, 80, 160)
 display.set_scroll_index_for_lines(3, 160, 240)
 ```
 
+By default all lines are in scroll group 0 (which can't scroll).
+
 Once the scroll groups have been configured, you can ask the "GPU" to offset them like so:
 
 ```python
@@ -92,12 +94,11 @@ DISPLAY_HEIGHT = 240
 FRAME_WIDTH = DISPLAY_WIDTH * 3
 FRAME_HEIGHT = 240
 
-display = PicoGraphics(DISPLAY_PICOVISION,
-                       width=DISPLAY_WIDTH,
+display = PicoGraphics(width=DISPLAY_WIDTH,
                        height=DISPLAY_HEIGHT,
                        frame_width=FRAME_WIDTH,
                        frame_height=FRAME_HEIGHT,
                        pen_type=PEN) 
 ```
 
-With a larger canvas you can draw offscreen and use scroll offsets to bring those regions into review.
+With a larger canvas you can draw offscreen and use scroll offsets to bring those regions into view.
