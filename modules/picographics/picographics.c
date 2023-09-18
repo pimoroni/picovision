@@ -58,6 +58,10 @@ MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_get_i2c_obj, ModPicoGraphics_get_i2c);
 
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics__del__obj, ModPicoGraphics__del__);
 
+// IO
+MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_is_button_x_pressed_obj, ModPicoGraphics_is_button_x_pressed);
+MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_is_button_a_pressed_obj, ModPicoGraphics_is_button_a_pressed);
+
 
 STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_pixel), MP_ROM_PTR(&ModPicoGraphics_pixel_obj) },
@@ -106,6 +110,9 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_font), MP_ROM_PTR(&ModPicoGraphics_set_font_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_get_i2c), MP_ROM_PTR(&ModPicoGraphics_get_i2c_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_is_button_x_pressed), MP_ROM_PTR(&ModPicoGraphics_is_button_x_pressed_obj) },
+    { MP_ROM_QSTR(MP_QSTR_is_button_a_pressed), MP_ROM_PTR(&ModPicoGraphics_is_button_a_pressed_obj) },
 
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&ModPicoGraphics__del__obj) },
 };

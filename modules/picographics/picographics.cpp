@@ -1168,6 +1168,16 @@ mp_obj_t ModPicoGraphics_line(size_t n_args, const mp_obj_t *args) {
     return mp_const_none;
 }
 
+mp_obj_t ModPicoGraphics_is_button_x_pressed(mp_obj_t self_in) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    return self->display->is_button_x_pressed() ? mp_const_true : mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_is_button_a_pressed(mp_obj_t self_in) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    return self->display->is_button_a_pressed() ? mp_const_true : mp_const_false;
+}
+
 mp_obj_t ModPicoGraphics_get_i2c(mp_obj_t self_in) {
     _PimoroniI2C_obj_t* i2c_obj = m_new_obj(_PimoroniI2C_obj_t);
     i2c_obj->base.type = &PimoroniI2C_type;
