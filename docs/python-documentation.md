@@ -1,6 +1,4 @@
-# PicoVision: Python Documentation <!-- omit in toc -->
-
-PicoVision uses a custom version of PicoGraphics that includes some new methods for working with the "GPU" features.
+# PicoVision: MicroPython Documentation <!-- omit in toc -->
 
 - [Getting Started](#getting-started)
   - [Differences from PicoGraphics](#differences-from-picographics)
