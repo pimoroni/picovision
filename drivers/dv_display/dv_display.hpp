@@ -74,7 +74,7 @@ namespace pimoroni {
     static constexpr uint I2C_REG_GPIO_HI_OE = 0xCA;
     static constexpr uint I2C_REG_GPIO_HI_PULL_UP = 0xCB;
     static constexpr uint I2C_REG_GPIO_HI_PULL_DOWN = 0xCC;
-    static constexpr uint I2C_REG_GPU_TEMP = 0xCE;
+    static constexpr uint I2C_REG_GPU_TEMP = 0xC6;
     static constexpr uint I2C_REG_EDID = 0xED;
     static constexpr uint I2C_REG_PALETTE_INDEX = 0xEE;
     static constexpr uint I2C_REG_SCROLL_BASE = 0xF0;
