@@ -1,29 +1,27 @@
 # PicoVision: Tips & Tricks
 
-## Sprites
-
 ## "Hardware" Scrolling
 
 PicoVision allows you to work with a drawing canvas that's larger than your screen and apply up to three scroll offsets to groups of scanlines.
 
-Each scanline can be assigned to an individual scroll offset, and there's no requirement for these to be contigous.
+Each scanline can be assigned to a scroll group, and there's no requirement for these to be contigous.
 
-To set up scroll offsets you must use the `set_scroll_index_for_lines` method, this takes a group number (0-3, group 0 can't be scrolled) and the lines you want to assign to it.
+To set up scroll offsets you must use the `set_scroll_group_for_lines` method, this takes a group number (0-3, group 0 can't be scrolled) and the lines you want to assign to it.
 
-For example, slicing a 320x240 screen into three equal portions, each with their own scroll index, might look like this:
+For example, slicing a 320x240 screen into three equal portions, each with their own scroll group, might look like this:
 
 ```python
-display.set_scroll_index_for_lines(1, 0, 80)
-display.set_scroll_index_for_lines(2, 80, 160)
-display.set_scroll_index_for_lines(3, 160, 240)
+display.set_scroll_group_for_lines(1, 0, 80)
+display.set_scroll_group_for_lines(2, 80, 160)
+display.set_scroll_group_for_lines(3, 160, 240)
 ```
 
-To scroll a portion of the screen, you must use the `set_display_offset` function. This takes an X and Y offset and the scroll index to offset: 
+To scroll a portion of the screen, you must use the `set_scroll_group_offset` function. This takes the scroll group to offset and the  X and Y values to scroll it: 
 
 ```python
-display.set_display_offset(x, y, 1)
-display.set_display_offset(x, y, 2)
-display.set_display_offset(x, y, 3)
+display.set_scroll_group_offset(1, x, y)
+display.set_scroll_group_offset(2, x, y)
+display.set_scroll_group_offset(3, x, y)
 ```
 
 If we put this together, we can scroll three lines of text across the screen without having to pay the cost of drawing them every frame:
@@ -37,7 +35,7 @@ from picographics import PicoGraphics, PEN_RGB555
 WIDTH = 320
 HEIGHT = 240
 
-display = PicoGraphics(pen_type=PEN_RGB555m width=WIDTH, height=HEIGHT, frame_width=WIDTH * 2, frame_height=HEIGHT)
+display = PicoGraphics(pen_type=PEN_RGB555, width=WIDTH, height=HEIGHT, frame_width=WIDTH * 2, frame_height=HEIGHT)
 
 TEXT = "Hello World"
 TEXT_SCALE = 3
@@ -46,9 +44,9 @@ BLACK = display.create_pen(0, 0, 0)
 WHITE = display.create_pen(255, 255, 255)
 
 # Split the display into three scrollable regions of equal size
-display.set_scroll_index_for_lines(1, 0, 80)
-display.set_scroll_index_for_lines(2, 80, 160)
-display.set_scroll_index_for_lines(3, 160, 240)
+display.set_scroll_group_for_lines(1, 0, 80)
+display.set_scroll_group_for_lines(2, 80, 160)
+display.set_scroll_group_for_lines(3, 160, 240)
 
 # Calculate the position of the text
 text_width = display.measure_text(TEXT, scale=TEXT_SCALE)
@@ -78,9 +76,9 @@ while True:
     offset1 = WIDTH / 2 + math.sin(t) * offset
     offset2 = WIDTH / 2 + math.sin(t + n) * offset
     offset3 = WIDTH / 2 + math.sin(t + n + n) * offset
-    display.set_display_offset(int(offset1), 0, 1)
-    display.set_display_offset(int(offset2), 0, 2)
-    display.set_display_offset(int(offset3), 0, 3)
+    display.set_scroll_group_offset(1, int(offset1), 0)
+    display.set_scroll_group_offset(2, int(offset2), 0)
+    display.set_scroll_group_offset(3, int(offset3), 0)
 ```
 
 ## Fill Rate & Drawing Things Fast
