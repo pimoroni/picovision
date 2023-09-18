@@ -10,13 +10,18 @@ extern "C" {
 
 namespace pimoroni {
     PicoGraphics_PenDV_RGB555::PicoGraphics_PenDV_RGB555(uint16_t width, uint16_t height, DVDisplay &dv_display)
-      : PicoGraphics(width, height, nullptr),
-        driver(dv_display)
+      : PicoGraphicsDV(width, height, dv_display)
     {
         this->pen_type = PEN_DV_RGB555;
     }
     void PicoGraphics_PenDV_RGB555::set_pen(uint c) {
         color = c;
+    }
+    void PicoGraphics_PenDV_RGB555::set_bg(uint c) {
+        background = c;
+    }
+    void PicoGraphics_PenDV_RGB555::set_depth(uint8_t new_depth) {
+        depth = new_depth > 0 ? 0x8000 : 0;
     }
     void PicoGraphics_PenDV_RGB555::set_pen(uint8_t r, uint8_t g, uint8_t b) {
         RGB src_color{r, g, b};
@@ -29,14 +34,16 @@ namespace pimoroni {
         return RGB::from_hsv(h, s, v).to_rgb555();
     }
     void PicoGraphics_PenDV_RGB555::set_pixel(const Point &p) {
-        driver.write_pixel(p, color);
+        driver.write_pixel(p, (uint16_t)(color | depth));
     }
     void PicoGraphics_PenDV_RGB555::set_pixel_span(const Point &p, uint l) {
-        driver.write_pixel_span(p, l, color);
+        driver.write_pixel_span(p, l, (uint16_t)(color | depth));
     }
     void PicoGraphics_PenDV_RGB555::set_pixel_alpha(const Point &p, const uint8_t a) {
-        uint16_t src = 0;
-        driver.read_pixel_span(p, 1, &src);
+        uint16_t src = background;
+        if (blend_mode == BlendMode::TARGET) {
+            driver.read_pixel_span(p, 1, &src);
+        }
 
         uint8_t src_r = (src >> 7) & 0b11111000;
         uint8_t src_g = (src >> 2) & 0b11111000;
@@ -76,12 +83,17 @@ namespace pimoroni {
         // Start reading the first row
         uint32_t address = driver.point_to_address({bounds.x, bounds.y});
         uint32_t row_len_in_words = (bounds.w + 1) >> 1;
-        driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+        if (blend_mode == BlendMode::TARGET) {
+            driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+        }
 
         const uint32_t colour_expanded = (uint32_t(color & 0x7C00) << 10) | (uint32_t(color & 0x3E0) << 5) | (color & 0x1F);
+        const uint32_t background_expanded = (uint32_t(background & 0x7C00) << 10) | (uint32_t(background & 0x3E0) << 5) | (background & 0x1F);
         uint32_t address_stride = driver.frame_row_stride();
 
-        driver.raw_wait_for_finish_blocking();
+        if (blend_mode == BlendMode::TARGET) {
+            driver.raw_wait_for_finish_blocking();
+        }
 
         for (int32_t y = 0; y < bounds.h; ++y) {
             std::swap(wbuf, rbuf);
@@ -92,29 +104,45 @@ namespace pimoroni {
 
             // Process this row
             uint8_t* alpha_ptr = &alpha_data[stride * y];
-            for (int32_t x = 0; x < bounds.w; ++x) {
-                uint8_t alpha = *alpha_ptr++;
-                if (alpha >= alpha_max) {
-                    wbuf[x] = color;
-                } else if (alpha > 0) {
+            if (blend_mode == BlendMode::TARGET) {
+                for (int32_t x = 0; x < bounds.w; ++x) {
+                    uint8_t alpha = *alpha_ptr++;
+                    if (alpha >= alpha_max) {
+                        wbuf[x] = (uint16_t)(color | depth);
+                    } else if (alpha > 0) {
+                        alpha = alpha_map[alpha];
 
-                    uint16_t src = wbuf[x];
-                    alpha = alpha_map[alpha];
+                        uint16_t src = wbuf[x];
 
-                    // Who said Cortex-M0 can't do SIMD?
-                    const uint32_t src_expanded = (uint32_t(src & 0x7C00) << 10) | (uint32_t(src & 0x3E0) << 5) | (src & 0x1F);
-                    const uint32_t blended = src_expanded * (16 - alpha) + colour_expanded * alpha;
-                    wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F);
+                        // Who said Cortex-M0 can't do SIMD?
+                        const uint32_t src_expanded = (uint32_t(src & 0x7C00) << 10) | (uint32_t(src & 0x3E0) << 5) | (src & 0x1F);
+                        const uint32_t blended = src_expanded * (16 - alpha) + colour_expanded * alpha;
+                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F) | (alpha > 7 ? depth : (src & 0x8000));
+                    }
+
+                    // Halfway through processing this row switch from writing previous row to reading the next
+                    if (x+1 == (int32_t)row_len_in_words && y+1 < bounds.h) {
+                        driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
+                    }
                 }
+            } else {
+                for (int32_t x = 0; x < bounds.w; ++x) {
+                    uint8_t alpha = *alpha_ptr++;
+                    if (alpha >= alpha_max) {
+                        wbuf[x] = (uint16_t)(color | depth);
+                    } else if (alpha > 0) {
+                        alpha = alpha_map[alpha];
 
-                // Halfway through processing this row switch from writing previous row to reading the next
-                if (x+1 == (int32_t)row_len_in_words && y+1 < bounds.h) {
-                    driver.raw_read_async(address, (uint32_t*)rbuf, row_len_in_words);
-                }
+                        const uint32_t blended = background_expanded * (16 - alpha) + colour_expanded * alpha;
+                        wbuf[x] = ((blended >> 14) & 0x7C00) | ((blended >> 9) & 0x3E0) | ((blended >> 4) & 0x1F) | (alpha > 7 ? depth : 0);
+                    } else {
+                        wbuf[x] = background;
+                    }
+                }          
             }
 
             // Write the row out while we loop on to the next
-            driver.raw_write_async(prev_address, (uint32_t*)wbuf, row_len_in_words);
+            driver.raw_write_async_bytes(prev_address, (uint32_t*)wbuf, bounds.w << 1);
         }
 
         // Wait for the last write to finish as we are writing from stack

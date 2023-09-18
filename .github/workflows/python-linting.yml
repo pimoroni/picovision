@@ -22,4 +22,4 @@ jobs:
     - name: Lint PicoVision Python Libraries
       shell: bash
       run: |
-        python3 -m ruff --show-source --ignore E501 lib/
+        python3 -m ruff --show-source --ignore E501,F401,F403 lib/

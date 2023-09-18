@@ -24,9 +24,9 @@ namespace pimoroni {
     static constexpr int NUM_PALETTES = 2;
 
 #if SUPPORT_WIDE_MODES
-    static constexpr int MAX_DISPLAYED_SPRITES = 16;
-#else
     static constexpr int MAX_DISPLAYED_SPRITES = 32;
+#else
+    static constexpr int MAX_DISPLAYED_SPRITES = 80;
 #endif
 
     enum Mode {
@@ -168,6 +168,8 @@ namespace pimoroni {
       // 24bpp interface
       void write_pixel(const Point &p, RGB888 colour);
       void write_pixel_span(const Point &p, uint l, RGB888 colour);
+      void write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
+      void read_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
 
       bool init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
       void flip();
@@ -221,6 +223,8 @@ namespace pimoroni {
       void set_scroll_idx_for_lines(int idx, int miny, int maxy);
 
       uint8_t get_gpio();
+
+      // The "Hi" GPIO are marked: CK, CS, D0, D1, D2, D3, D+, D-
       uint8_t get_gpio_hi();
       void set_gpio_hi_dir(uint pin, bool output);
       void set_gpio_hi_dir_all(uint8_t output_enables);
@@ -232,8 +236,8 @@ namespace pimoroni {
       void set_gpio_hi_pull_down_all(uint8_t vals);
       float get_gpu_temp();  // in C
 
-      bool is_button_b_pressed() { return (get_gpio() & 0x1) != 0x1; }
-      bool is_button_c_pressed() { return (get_gpio() & 0x2) != 0x2; }
+      bool is_button_x_pressed() { return (get_gpio() & 0x1) != 0x1; }
+      bool is_button_a_pressed() { return (get_gpio() & 0x2) != 0x2; }
 
       // Valid LED levels are from 0-127.
       void set_led_level(uint8_t level);
@@ -249,6 +253,7 @@ namespace pimoroni {
       int frame_row_stride() const { return (int)frame_width * 6; }
       void raw_read_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.read(address, data, len_in_words); }
       void raw_write_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.write(address, data, len_in_words << 2); }
+      void raw_write_async_bytes(uint32_t address, uint32_t* data, uint32_t len_in_bytes) { ram.write(address, data, len_in_bytes); }
       void raw_wait_for_finish_blocking() { ram.wait_for_finish_blocking(); }
 
     protected:

@@ -73,27 +73,38 @@ display.set_palette(PALETTE_1BIT)
 
 BG = len(PALETTE_COLOUR) - 1
 
+A = 10  # Short grass
+B = 11  # Spikes
+
 level_data = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 8, 0, 0, 0, B, 0, 0, 0, 0, 7, 0, 0, 6, 0, 0],
     [0, 0, 1, 2, 2, 2, 2, 2, 5, 2, 2, 2, 2, 2, 2, 2, 5, 2, 3, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0],
+    [0, 0, 0, 0, 6, 0, 0, 0, 4, 0, 0, 0, 0, 9, 0, 0, 4, 0, 0, 0],
     [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 2, 2, 2, 2, 5, 3, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 1, 5, 2, 5, 2, 2, 3, 0, 0, 0, 4, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0, 4, 0, 0],
+    [0, 0, 0, 0, 0, 0, A, 0, 4, 0, 4, 0, 0, 6, 0, 0, 0, 4, 0, 0],
     [0, 0, 0, 0, 1, 5, 2, 2, 3, 0, 4, 0, 1, 2, 2, 3, 0, 4, 0, 0],
-    [0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 4, 0, 0],
+    [0, 0, 8, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 4, 8, 0],
     [0, 1, 2, 5, 2, 3, 0, 0, 1, 2, 2, 2, 5, 3, 0, 1, 5, 2, 2, 2],
-    [0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0],
+    [0, B, 0, 4, A, 0, 0, 0, 0, 8, 0, 0, 4, 0, 0, 0, 4, 0, 0, A],
     [2, 2, 2, 2, 2, 3, 0, 0, 1, 2, 2, 2, 2, 3, 0, 1, 2, 2, 2, 2],
 ]
+
 
 # Crush the 2d list above into a simple bytearray
 level_data_bytes = b""
 
 for row in level_data:
     # Add 5 to each index, to move us past the fire tiles to the platforms
-    level_data_bytes += bytes([n + 5 if n > 0 else n for n in row])
+    level_data_bytes += bytes([n + 5 if n > 0 and n <= 5 else 0 for n in row])
+
+# Crush the 2d list above into a simple bytearray
+foreground_data_bytes = b""
+
+for row in level_data:
+    # Add 5 to each index, to move us past the fire tiles to the platforms
+    foreground_data_bytes += bytes([n + 5 if n > 5 else 0 for n in row])
 
 
 def draw_level():
@@ -122,11 +133,11 @@ def draw_level():
     AAAAHL = display.load_animation(animation_data_slot, animations, pvgame.TILE_SIZE, source=(80, 0, 16, 80))
 
     # Everything but the fire
-    display.set_scroll_index_for_lines(1, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
-    display.set_scroll_index_for_lines(2, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
+    display.set_scroll_group_for_lines(1, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
+    display.set_scroll_group_for_lines(2, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
 
     # For scrolling the fire
-    display.set_scroll_index_for_lines(3, DISPLAY_HEIGHT - pvgame.TILE_H, DISPLAY_HEIGHT)
+    display.set_scroll_group_for_lines(3, DISPLAY_HEIGHT - pvgame.TILE_H, DISPLAY_HEIGHT)
 
     # This sequence is repeated horizontally
     fire_tilemap = [0, 2, 1, 4, 3]
@@ -149,9 +160,15 @@ def draw_level():
     # And clear the bit that extends behind the animated fire
     display.rectangle(0, DISPLAY_HEIGHT - pvgame.TILE_H, len(fire_tilemap) * pvgame.TILE_H, pvgame.TILE_H)
 
+    display.set_depth(0)
+
     # Draw the level data
     display.tilemap(level_data_bytes, (0, 32, 20, 12), tiles)
     display.tilemap(fire_tilemap_bytes, (0, DISPLAY_HEIGHT - pvgame.TILE_H, len(fire_tilemap), 1), tiles)
+
+    display.set_depth(1)
+
+    display.tilemap(foreground_data_bytes, (0, 32, 20, 12), tiles)
 
     display.update()
 
@@ -245,7 +262,7 @@ t_start = time.time()
 while True:
     fire_x = int(time.ticks_ms() / 200) % FIRE_FRAMES
     fire_x *= SPRITE_W * FIRE_FRAMES
-    display.set_display_offset(fire_x, 0, 3)
+    display.set_scroll_group_offset(3, fire_x, 0)
 
     t = int(time.ticks_ms() / 250)
 
