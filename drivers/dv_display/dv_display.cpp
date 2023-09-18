@@ -232,6 +232,15 @@ namespace pimoroni {
     i2c->reg_write_uint8(I2C_ADDR, I2C_REG_GPIO_HI_PULL_DOWN, val);
   }
 
+  float DVDisplay::get_gpu_temp() {
+    uint16_t raw_value = i2c->reg_read_uint16(I2C_ADDR, I2C_REG_GPU_TEMP);
+
+    constexpr float conversionFactor = 3.3f / (1 << 12);
+
+    float adc = (float)raw_value * conversionFactor;
+    return 27.0f - (adc - 0.706f) / 0.001721f;
+  }
+
   void DVDisplay::set_led_level(uint8_t level) {
     i2c->reg_write_uint8(I2C_ADDR, I2C_REG_LED, level | 0x80);
   }
