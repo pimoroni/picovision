@@ -229,7 +229,7 @@ mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {
 }
 
 // DV Display specific functions
-mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+mp_obj_t ModPicoGraphics_set_scroll_group_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_self, ARG_scroll_group, ARG_x, ARG_y };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -253,7 +253,7 @@ mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_a
     return mp_const_none;
 }
 
-mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_t *args) {
+mp_obj_t ModPicoGraphics_set_scroll_group_for_lines(size_t n_args, const mp_obj_t *args) {
     enum { ARG_self, ARG_scroll_index, ARG_min_y, ARG_max_y };
 
     dv_display.set_scroll_idx_for_lines(
