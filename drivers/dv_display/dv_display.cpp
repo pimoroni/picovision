@@ -23,8 +23,20 @@ static void my_thread_yield() {
 }
 #endif
 
-
 namespace pimoroni {
+  volatile bool enable_switch_on_vsync = false;
+
+  void vsync_callback() {
+    if (gpio_get_irq_event_mask(DVDisplay::VSYNC) & GPIO_IRQ_EDGE_RISE) {
+      gpio_acknowledge_irq(DVDisplay::VSYNC, GPIO_IRQ_EDGE_RISE);
+
+      if (enable_switch_on_vsync) {
+        // Toggle RAM_SEL pin
+        gpio_xor_mask(1 << DVDisplay::RAM_SEL);
+        enable_switch_on_vsync = false;
+      }
+    }
+  }
 
   bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
     display_width = display_width_;
@@ -123,10 +135,18 @@ namespace pimoroni {
 
     set_mode(mode_);
 
+    // We set a high priority shared handler on the IO_IRQ_BANK0 interrupt, instead
+    // of using the pico-sdk methods for GPIO interrupts, because MicroPython sets up its
+    // own shared handler replacing the SDK method.  By setting our handler high priority
+    // we get in before either the pico-sdk or Micropython handler, so it works in both cases.
+    gpio_set_irq_enabled(VSYNC, GPIO_IRQ_EDGE_RISE, true);
+    irq_add_shared_handler(IO_IRQ_BANK0, vsync_callback, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY + 1);
+    irq_set_enabled(IO_IRQ_BANK0, true);
+
     return true;
   }
   
-  void DVDisplay::flip() {
+  void DVDisplay::flip_async() {
     if (mode == MODE_PALETTE) {
       if (rewrite_palette > 0) {
         write_palette();
@@ -141,24 +161,34 @@ namespace pimoroni {
       ram.write(point_to_address16(pixel_buffer_location), pixel_buffer, pixel_buffer_x << 1);
       pixel_buffer_location.y = -1;
     }
-    bank ^= 1;
-    ram.wait_for_finish_blocking();
-    while (gpio_get(VSYNC) == 0);
-    gpio_put(RAM_SEL, bank);
-
-    // Yield the thread now the time sensitive wait is over
-    // TODO: Better sleep, and use an interrupt handler
-    my_thread_yield();
 
     if (rewrite_header) {
       set_scroll_idx_for_lines(-1, 0, display_height);
       write_sprite_table();
-      rewrite_header = false;
+      --rewrite_header;
+    }
+
+    bank ^= 1;
+    ram.wait_for_finish_blocking();
+
+    enable_switch_on_vsync = true;
+  }
+
+  void DVDisplay::flip() {
+    flip_async();
+    wait_for_flip();
+  }
+
+  void DVDisplay::wait_for_flip() {
+    while (enable_switch_on_vsync) {
+      // Waiting for IRQ handler to do flip.
+      my_thread_yield();
     }
   }
 
   void DVDisplay::reset() {
     swd_reset();
+    irq_remove_handler(IO_IRQ_BANK0, vsync_callback);
   }
 
   void DVDisplay::set_display_offset(const Point& p, int idx) {
@@ -407,12 +437,10 @@ namespace pimoroni {
   void DVDisplay::set_mode(Mode new_mode)
   {
     mode = new_mode;
-    rewrite_header = true;
-    set_scroll_idx_for_lines(-1, 0, display_height);
+    rewrite_header = 2;
     if (mode == MODE_PALETTE) {
       rewrite_palette = 2;
     }
-    write_sprite_table();
   }
   
   void DVDisplay::write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data)
