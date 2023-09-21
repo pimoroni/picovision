@@ -187,7 +187,7 @@ namespace pimoroni {
   }
 
   void DVDisplay::reset() {
-    swd_reset();
+    //swd_reset();
     irq_remove_handler(IO_IRQ_BANK0, vsync_callback);
   }
 
