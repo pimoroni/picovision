@@ -6,6 +6,17 @@
 
 using namespace pimoroni;
 
+
+namespace {
+    class DV_preinit {
+        public:
+        DV_preinit() {
+            DVDisplay::preinit();
+        }
+    };
+    DV_preinit dv_preinit __attribute__ ((init_priority (101))) ;
+}
+
 extern "C" {
 #include "PNGdec.h"
 #include "picographics.h"

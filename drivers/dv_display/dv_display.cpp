@@ -38,6 +38,10 @@ namespace pimoroni {
     }
   }
 
+  void DVDisplay::preinit() {
+    swd_load_program(section_addresses, section_data, section_data_len, sizeof(section_addresses) / sizeof(section_addresses[0]), 0x20000001, 0x15004000, true);
+  };
+
   bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
     display_width = display_width_;
     display_height = display_height_;
@@ -107,7 +111,7 @@ namespace pimoroni {
     gpio_set_dir(VSYNC, GPIO_IN);
 
     sleep_ms(200);
-    swd_load_program(section_addresses, section_data, section_data_len, sizeof(section_addresses) / sizeof(section_addresses[0]), 0x20000001, 0x15004000, true);
+    //swd_load_program(section_addresses, section_data, section_data_len, sizeof(section_addresses) / sizeof(section_addresses[0]), 0x20000001, 0x15004000, true);
 
     ram.init();
     bank = 0;

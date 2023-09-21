@@ -132,6 +132,8 @@ namespace pimoroni {
     // Methods
     //--------------------------------------------------
     public:
+      static void preinit();
+  
       void test(void){
         char writeBuffer[256];
         char readBuffer[256];
