@@ -12,19 +12,14 @@
 #include "pico_synth_i2s.hpp"
 
 
-static uint32_t audio_dma_channel;
-
 namespace pimoroni {
 
   PicoSynth_I2S* PicoSynth_I2S::picosynth = nullptr;
-  PIO PicoSynth_I2S::audio_pio = pio0;
-  uint PicoSynth_I2S::audio_sm = 0;
-  uint PicoSynth_I2S::audio_sm_offset = 0;
 
   // once the dma transfer of the scanline is complete we move to the
   // next scanline (or quit if we're finished)
   void __isr PicoSynth_I2S::dma_complete() {
-    if(picosynth != nullptr && dma_channel_get_irq0_status(audio_dma_channel)) {
+    if(picosynth != nullptr && dma_channel_get_irq0_status(picosynth->audio_dma_channel)) {
       picosynth->next_audio_sequence();
     }
   }
@@ -33,9 +28,10 @@ namespace pimoroni {
     if(picosynth == this) {
       partial_teardown();
 
-      dma_channel_unclaim(audio_dma_channel); // This works now the teardown behaves correctly
-      pio_sm_unclaim(audio_pio, audio_sm);
-      pio_remove_program(audio_pio, &audio_i2s_program, audio_sm_offset);
+      dma_channel_unclaim(picosynth->audio_dma_channel); // This works now the teardown behaves correctly
+      pio_sm_unclaim(picosynth->audio_pio, picosynth->audio_sm);
+      pio_remove_program(picosynth->audio_pio, &audio_i2s_program, picosynth->audio_sm_offset);
+      irq_set_enabled(DMA_IRQ_0, false);
       irq_remove_handler(DMA_IRQ_0, dma_complete);
 
       picosynth = nullptr;
@@ -44,27 +40,25 @@ namespace pimoroni {
 
   void PicoSynth_I2S::partial_teardown() {
     // Stop the audio SM
-    pio_sm_set_enabled(audio_pio, audio_sm, false);
+    pio_sm_set_enabled(picosynth->audio_pio, picosynth->audio_sm, false);
 
     // Reset the I2S pins to avoid popping when audio is suddenly stopped
-    const uint pins_to_clear = 1 << i2s_data | 1 << i2s_bclk | 1 << i2s_lrclk;
-    pio_sm_set_pins_with_mask(audio_pio, audio_sm, 0, pins_to_clear);
+    const uint pins_to_clear = 1 << picosynth->i2s_data | 1 << picosynth->i2s_bclk | 1 << picosynth->i2s_lrclk;
+    pio_sm_set_pins_with_mask(picosynth->audio_pio, picosynth->audio_sm, 0, pins_to_clear);
 
     // Abort any in-progress DMA transfer
-    dma_safe_abort(audio_dma_channel);
+    dma_safe_abort(picosynth->audio_dma_channel);
   }
 
   void PicoSynth_I2S::init() {
 
     if(picosynth != nullptr) {
-      // Tear down the old GU instance's hardware resources
+      // Tear down the old PicoSynth instance's hardware resources
       partial_teardown();
     }
 
     // setup audio pio program
-    audio_pio = pio0;
     if(picosynth == nullptr) {
-      audio_sm = pio_claim_unused_sm(audio_pio, true);
       audio_sm_offset = pio_add_program(audio_pio, &audio_i2s_program);
     }
 
@@ -78,6 +72,7 @@ namespace pimoroni {
     pio_sm_set_clkdiv_int_frac(audio_pio, audio_sm, divider >> 8u, divider & 0xffu);
 
     audio_dma_channel = dma_claim_unused_channel(true);
+
     dma_channel_config audio_config = dma_channel_get_default_config(audio_dma_channel);
     channel_config_set_transfer_data_size(&audio_config, DMA_SIZE_16);
     //channel_config_set_bswap(&audio_config, false); // byte swap to reverse little endian

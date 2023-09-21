@@ -7,16 +7,18 @@
 namespace pimoroni {
 
   class PicoSynth_I2S {
-  private:
-    static const uint SYSTEM_FREQ = 22050;
-
+  public:
     uint i2s_data               =  9;
     uint i2s_bclk               = 10;
     uint i2s_lrclk              = 11;
 
-    static PIO audio_pio;
-    static uint audio_sm;
-    static uint audio_sm_offset;
+    PIO audio_pio;
+    uint audio_sm;
+    uint audio_sm_offset        = 0;
+    uint audio_dma_channel;
+
+  private:
+    static const uint SYSTEM_FREQ = 22050;
 
     uint16_t volume = 127;
 
@@ -39,9 +41,12 @@ namespace pimoroni {
     PlayMode play_mode = NOT_PLAYING;
 
   public:
-    PicoSynth_I2S(uint i2s_data, uint i2s_bclk, uint i2s_lrclk) : i2s_data(i2s_data), i2s_bclk(i2s_bclk), i2s_lrclk(i2s_lrclk) {
+    PicoSynth_I2S(uint i2s_data, uint i2s_bclk, uint i2s_lrclk, uint audio_pio, uint audio_sm) : i2s_data(i2s_data), i2s_bclk(i2s_bclk), i2s_lrclk(i2s_lrclk), audio_pio(audio_pio == 0 ? pio0 : pio1), audio_sm(audio_sm) {
         // Nothing to see here...
     }
+
+    PicoSynth_I2S(uint i2s_data, uint i2s_bclk, uint i2s_lrclk) : PicoSynth_I2S(i2s_data, i2s_bclk, i2s_lrclk, 0, 0) {};
+
     ~PicoSynth_I2S();
 
     void init();

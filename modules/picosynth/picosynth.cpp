@@ -359,33 +359,30 @@ mp_obj_t PicoSynth_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_k
         { MP_QSTR_i2s_data, MP_ARG_INT, {.u_int = 26} },
         { MP_QSTR_i2s_bclk, MP_ARG_INT, {.u_int = 27} },
         { MP_QSTR_i2s_lrclk, MP_ARG_INT, {.u_int = 28} },
-        //{ MP_QSTR_pio, MP_ARG_INT, {.u_int = 0} },
-        //{ MP_QSTR_sm, MP_ARG_INT, {.u_int = 0} }
+        { MP_QSTR_pio, MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_sm, MP_ARG_INT, {.u_int = 0} }
     };
 
     // Parse args.
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    // TODO support custom PIO and SM
-    /*
-    int pio_int = args[ARG_pio].u_int;
+    uint pio_int = args[ARG_pio].u_int;
     if(pio_int < 0 || pio_int > (int)NUM_PIOS) {
         mp_raise_ValueError("pio out of range. Expected 0 to 1");
     }
     //PIO pio = pio_int == 0 ? pio0 : pio1;
 
-    int sm = args[ARG_sm].u_int;
+    uint sm = args[ARG_sm].u_int;
     if(sm < 0 || sm > (int)NUM_PIO_STATE_MACHINES) {
         mp_raise_ValueError("sm out of range. Expected 0 to 3");
     }
-    */
 
     uint pin_data = args[ARG_i2s_data].u_int;
     uint pin_bclk = args[ARG_i2s_bclk].u_int;
     uint pin_lrclk = args[ARG_i2s_lrclk].u_int;
 
-    PicoSynth_I2S *picosynth = m_new_class(PicoSynth_I2S, pin_data, pin_bclk, pin_lrclk);
+    PicoSynth_I2S *picosynth = m_new_class(PicoSynth_I2S, pin_data, pin_bclk, pin_lrclk, pio_int, sm);
     picosynth->init();
 
     self = m_new_obj_with_finaliser(_PicoSynth_obj_t);
