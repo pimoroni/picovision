@@ -83,6 +83,8 @@ namespace pimoroni {
     // Variables
     //--------------------------------------------------
   protected:
+    friend void vsync_callback();
+
     // Ram accessed through the APS6404 driver
     APS6404 ram;
 
@@ -175,6 +177,11 @@ namespace pimoroni {
       void flip();
       void reset();
 
+      // flip_async queues a flip but returns without blocking.
+      // You must call wait_for_flip before doing any more reads or writes, defining sprites, etc.
+      void flip_async();
+      void wait_for_flip();
+
       // Define the data for a sprite, the specified data index can then be supplied
       // to set_sprite to use the sprite.  Up to 1024 sprites can be defined.
       // Each sprite can be up to 2KB big, with a maximum width or height of 64 pixels.
@@ -258,7 +265,7 @@ namespace pimoroni {
 
     protected:
       uint8_t palette[NUM_PALETTES * PALETTE_SIZE * 3] alignas(4);
-      bool rewrite_header = false;
+      uint8_t rewrite_header = 0;
       uint8_t rewrite_palette = 0;
       uint8_t current_palette = 0;
 
