@@ -62,6 +62,9 @@ MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics__del__obj, ModPicoGraphics__del__);
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_is_button_x_pressed_obj, ModPicoGraphics_is_button_x_pressed);
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_is_button_a_pressed_obj, ModPicoGraphics_is_button_a_pressed);
 
+// Loop
+MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_loop_obj, ModPicoGraphics_loop);
+
 
 STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_pixel), MP_ROM_PTR(&ModPicoGraphics_pixel_obj) },
@@ -113,6 +116,8 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_is_button_x_pressed), MP_ROM_PTR(&ModPicoGraphics_is_button_x_pressed_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_button_a_pressed), MP_ROM_PTR(&ModPicoGraphics_is_button_a_pressed_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_loop), MP_ROM_PTR(&ModPicoGraphics_loop_obj) },
 
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&ModPicoGraphics__del__obj) },
 };

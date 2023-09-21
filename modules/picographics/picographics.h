@@ -93,3 +93,6 @@ extern mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in);
 // IO IO
 extern mp_obj_t ModPicoGraphics_is_button_x_pressed(mp_obj_t self_in);
 extern mp_obj_t ModPicoGraphics_is_button_a_pressed(mp_obj_t self_in);
+
+// Loop
+extern mp_obj_t ModPicoGraphics_loop(mp_obj_t self_in, mp_obj_t update, mp_obj_t render);

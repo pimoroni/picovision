@@ -1168,6 +1168,32 @@ mp_obj_t ModPicoGraphics_line(size_t n_args, const mp_obj_t *args) {
     return mp_const_none;
 }
 
+mp_obj_t ModPicoGraphics_loop(mp_obj_t self_in, mp_obj_t update, mp_obj_t render) {
+    (void)self_in;
+    /*
+    TODO: Uh how do we typecheck a function?
+    if(!mp_obj_is_type(update, &mp_type_function)) {
+        mp_raise_TypeError("update(ticks_ms) must be a function.");
+    }
+    if(!mp_obj_is_type(render, &mp_type_function)) {
+        mp_raise_TypeError("render(ticks_ms) must be a function.");
+    }*/
+    //ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    absolute_time_t t_start = get_absolute_time();
+    mp_obj_t result;
+    while(true) {
+        uint32_t tick = absolute_time_diff_us(t_start, get_absolute_time()) / 1000;
+        result = mp_call_function_1(update, mp_obj_new_int(tick));
+        if (result == mp_const_false) break;
+        dv_display.wait_for_flip();
+        result = mp_call_function_1(render, mp_obj_new_int(tick));
+        if (result == mp_const_false) break;
+        dv_display.flip_async();
+        MICROPY_EVENT_POLL_HOOK
+    }
+    return mp_const_none;
+}
+
 mp_obj_t ModPicoGraphics_is_button_x_pressed(mp_obj_t self_in) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
     return self->display->is_button_x_pressed() ? mp_const_true : mp_const_false;
