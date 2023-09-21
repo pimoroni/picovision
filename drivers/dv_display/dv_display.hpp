@@ -67,6 +67,7 @@ namespace pimoroni {
     static constexpr uint I2C_ADDR = 0x0D;
     static constexpr uint I2C_REG_SET_RES = 0xFC;
     static constexpr uint I2C_REG_START = 0xFD;
+    static constexpr uint I2C_REG_STOP = 0xFF;
     static constexpr uint I2C_REG_GPIO = 0xC0;
     static constexpr uint I2C_REG_LED = 0xC1;
     static constexpr uint I2C_REG_GPIO_HI = 0xC8;
