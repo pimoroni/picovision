@@ -30,6 +30,9 @@ include(qrcode/micropython/micropython)
 include(micropython-common-breakouts)
 include(pcf85063a/micropython)
 
+# Pico Synth
+include(modules/picosynth/micropython)
+
 # Utility
 include(adcfft/micropython)
 
