@@ -201,6 +201,9 @@ namespace pimoroni {
   }
 
   void DVDisplay::reset() {
+    for(auto i = 0u; i < MAX_DISPLAYED_SPRITES; i++) {
+      clear_sprite(i);
+    }
     //swd_reset();
     i2c->reg_write_uint8(I2C_ADDR, I2C_REG_STOP, 1);
 #ifdef MICROPY_BUILD_TYPE
