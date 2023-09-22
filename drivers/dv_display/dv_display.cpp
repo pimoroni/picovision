@@ -39,7 +39,24 @@ namespace pimoroni {
   }
 
   void DVDisplay::preinit() {
+    gpio_init(RAM_SEL);
+    gpio_put(RAM_SEL, 0);
+    gpio_set_dir(RAM_SEL, GPIO_OUT);
+
+    gpio_init(VSYNC);
+    gpio_set_dir(VSYNC, GPIO_IN);
+
     swd_load_program(section_addresses, section_data, section_data_len, sizeof(section_addresses) / sizeof(section_addresses[0]), 0x20000001, 0x15004000, true);
+
+#ifndef MICROPY_BUILD_TYPE
+      // We set a high priority shared handler on the IO_IRQ_BANK0 interrupt, instead
+      // of using the pico-sdk methods for GPIO interrupts, because MicroPython sets up its
+      // own shared handler replacing the SDK method.  By setting our handler high priority
+      // we get in before either the pico-sdk or Micropython handler, so it works in both cases.
+      gpio_set_irq_enabled(VSYNC, GPIO_IRQ_EDGE_RISE, true);
+      irq_add_shared_handler(IO_IRQ_BANK0, vsync_callback, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY + 1);
+      irq_set_enabled(IO_IRQ_BANK0, true);
+#endif
   };
 
   bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
@@ -103,16 +120,7 @@ namespace pimoroni {
       return false;
     }
 
-    gpio_init(RAM_SEL);
     gpio_put(RAM_SEL, 0);
-    gpio_set_dir(RAM_SEL, GPIO_OUT);
-
-    gpio_init(VSYNC);
-    gpio_set_dir(VSYNC, GPIO_IN);
-
-    sleep_ms(200);
-    //swd_load_program(section_addresses, section_data, section_data_len, sizeof(section_addresses) / sizeof(section_addresses[0]), 0x20000001, 0x15004000, true);
-
     ram.init();
     bank = 0;
     write_header();
@@ -126,7 +134,7 @@ namespace pimoroni {
 
     bank = 0;
     gpio_put(RAM_SEL, 0);
-    sleep_ms(100);
+    sleep_ms(50);
 
     mp_printf(&mp_plat_print, "Start I2C\n");
 
@@ -139,13 +147,15 @@ namespace pimoroni {
 
     set_mode(mode_);
 
-    // We set a high priority shared handler on the IO_IRQ_BANK0 interrupt, instead
-    // of using the pico-sdk methods for GPIO interrupts, because MicroPython sets up its
-    // own shared handler replacing the SDK method.  By setting our handler high priority
-    // we get in before either the pico-sdk or Micropython handler, so it works in both cases.
-    gpio_set_irq_enabled(VSYNC, GPIO_IRQ_EDGE_RISE, true);
-    irq_add_shared_handler(IO_IRQ_BANK0, vsync_callback, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY + 1);
-    irq_set_enabled(IO_IRQ_BANK0, true);
+#ifdef MICROPY_BUILD_TYPE
+      // We set a high priority shared handler on the IO_IRQ_BANK0 interrupt, instead
+      // of using the pico-sdk methods for GPIO interrupts, because MicroPython sets up its
+      // own shared handler replacing the SDK method.  By setting our handler high priority
+      // we get in before either the pico-sdk or Micropython handler, so it works in both cases.
+      gpio_set_irq_enabled(VSYNC, GPIO_IRQ_EDGE_RISE, true);
+      irq_add_shared_handler(IO_IRQ_BANK0, vsync_callback, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY + 1);
+      irq_set_enabled(IO_IRQ_BANK0, true);
+#endif
 
     return true;
   }
@@ -192,7 +202,10 @@ namespace pimoroni {
 
   void DVDisplay::reset() {
     //swd_reset();
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_STOP, 1);
+#ifdef MICROPY_BUILD_TYPE
     irq_remove_handler(IO_IRQ_BANK0, vsync_callback);
+#endif
   }
 
   void DVDisplay::set_display_offset(const Point& p, int idx) {
