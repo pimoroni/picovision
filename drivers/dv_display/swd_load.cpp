@@ -1,6 +1,8 @@
 #include "pico/stdlib.h"
 #include "stdio.h"
 
+#include "hardware/clocks.h"
+
 #ifndef NO_QSTR
 #include "swd.pio.h"
 #endif
@@ -17,6 +19,7 @@ extern "C" {
 static uint pio_offset;
 static uint pio_sm;
 static const pio_program_t* pio_prog;
+static float pio_clkdiv;
 
 PIO swd_pio = pio0;
 
@@ -36,9 +39,9 @@ static void switch_program(bool read, bool raw = false) {
                      (read ? &swd_read_program : &swd_write_program);
     pio_offset = pio_change_exclusive_program(swd_pio, pio_prog);
     if (raw) {
-        swd_raw_program_init(swd_pio, pio_sm, pio_offset, 2, 3, read);
+        swd_raw_program_init(swd_pio, pio_sm, pio_offset, 2, 3, read, pio_clkdiv);
     } else {
-        swd_program_init(swd_pio, pio_sm, pio_offset, 2, 3, read);
+        swd_program_init(swd_pio, pio_sm, pio_offset, 2, 3, read, pio_clkdiv);
         wait_for_idle();
         swd_pio->irq = 1;
     }
@@ -110,7 +113,7 @@ static bool connect(bool first = true, uint core = 0) {
 
         swd_initial_init(swd_pio, pio_sm, 2, 3);
 
-        swd_raw_program_init(swd_pio, pio_sm, pio_offset, 2, 3, false);
+        swd_raw_program_init(swd_pio, pio_sm, pio_offset, 2, 3, false, pio_clkdiv);
     } else {
         switch_program(false, true);
     }
@@ -148,7 +151,7 @@ static bool connect(bool first = true, uint core = 0) {
     pio_sm_set_enabled(swd_pio, pio_sm, false);
     pio_prog = &swd_write_ignore_error_program;
     pio_offset = pio_change_exclusive_program(swd_pio, pio_prog);
-    swd_program_init(swd_pio, pio_sm, pio_offset, 2, 3, false);
+    swd_program_init(swd_pio, pio_sm, pio_offset, 2, 3, false, pio_clkdiv);
     wait_for_idle();
     swd_pio->irq = 1;
     pio_sm_put_blocking(swd_pio, pio_sm, 0x19);
@@ -348,6 +351,9 @@ static bool swd_reset_internal() {
     gpio_init(3);
     gpio_disable_pulls(2);
     gpio_pull_up(3);
+
+    uint sys_clk_hz = clock_get_hz(clk_sys);
+    pio_clkdiv = sys_clk_hz / (3 * MHZ);
 
     bool ok = connect(true, 0xf);
     mp_printf(&mp_plat_print, "Reset %s\n", ok ? "OK" : "Fail");

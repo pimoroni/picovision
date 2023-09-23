@@ -140,9 +140,41 @@ namespace pimoroni {
             );
         }
 
-        for (int len = len_in_bytes, page_len = std::min(PAGE_SIZE, len); 
-             len > 0; 
-             addr += page_len, data += page_len >> 2, len -= page_len, page_len = std::min(PAGE_SIZE, len))
+        int page_len = PAGE_SIZE - (addr & (PAGE_SIZE - 1));
+        int len = len_in_bytes;
+        if ((page_len & 3) != 0) {
+            while (len > page_len) {
+                wait_for_finish_blocking();
+                hw_set_bits(&dma_hw->ch[dma_channel].al1_ctrl, DMA_CH0_CTRL_TRIG_INCR_READ_BITS);
+
+                pio_sm_put_blocking(pio, pio_sm, (page_len << 1) - 1);
+                pio_sm_put_blocking(pio, pio_sm, 0x38000000u | addr);
+                pio_sm_put_blocking(pio, pio_sm, pio_offset + sram_offset_do_write);
+
+                dma_channel_transfer_from_buffer_now(dma_channel, data, (page_len >> 2) + 1);
+
+                len -= page_len;
+                addr += page_len;
+                data += page_len >> 2;
+                int bytes_sent_last_word = page_len & 3;
+                page_len = std::min(4 - bytes_sent_last_word, len);
+                
+                dma_channel_wait_for_finish_blocking(dma_channel);
+                pio_sm_put_blocking(pio, pio_sm, (page_len << 1) - 1);
+                pio_sm_put_blocking(pio, pio_sm, 0x38000000u | addr);
+                pio_sm_put_blocking(pio, pio_sm, pio_offset + sram_offset_do_write);
+                pio_sm_put_blocking(pio, pio_sm, __builtin_bswap32(*data >> (8 * bytes_sent_last_word)));
+                
+                addr += page_len;
+                len -= page_len;
+                ++data;
+                page_len = PAGE_SIZE - page_len;
+            }
+        }
+
+        for (page_len = std::min(page_len, len); 
+            len > 0; 
+            addr += page_len, data += page_len >> 2, len -= page_len, page_len = std::min(PAGE_SIZE, len))
         {
             wait_for_finish_blocking();
             hw_set_bits(&dma_hw->ch[dma_channel].al1_ctrl, DMA_CH0_CTRL_TRIG_INCR_READ_BITS);
@@ -177,7 +209,25 @@ namespace pimoroni {
             );
         }
 
-        for (int len = len_in_bytes, page_len = std::min(PAGE_SIZE, len); 
+        int first_page_len = PAGE_SIZE - (addr & (PAGE_SIZE - 1));
+        if ((first_page_len & 3) != 0 && (int)len_in_bytes > first_page_len) {
+            wait_for_finish_blocking();
+            hw_clear_bits(&dma_hw->ch[dma_channel].al1_ctrl, DMA_CH0_CTRL_TRIG_INCR_READ_BITS);
+
+            pio_sm_put_blocking(pio, pio_sm, (first_page_len << 1) - 1);
+            pio_sm_put_blocking(pio, pio_sm, 0x38000000u | addr);
+            pio_sm_put_blocking(pio, pio_sm, pio_offset + sram_offset_do_write);
+
+            dma_channel_transfer_from_buffer_now(dma_channel, &data, (first_page_len >> 2) + 1);
+
+            len_in_bytes -= first_page_len;
+            addr += first_page_len;
+            int bytes_sent_last_word = first_page_len & 3;
+            first_page_len = PAGE_SIZE;
+            data = (data >> (8 * bytes_sent_last_word)) | (data << (32 - (8 * bytes_sent_last_word)));
+        }
+
+        for (int len = len_in_bytes, page_len = std::min(first_page_len, len); 
              len > 0; 
              addr += page_len, len -= page_len, page_len = std::min(PAGE_SIZE, len))
         {
