@@ -241,12 +241,14 @@ mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {
 
 // DV Display specific functions
 mp_obj_t ModPicoGraphics_set_scroll_group_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_scroll_group, ARG_x, ARG_y };
+    enum { ARG_self, ARG_scroll_group, ARG_x, ARG_y, ARG_wrap_x, ARG_wrap_to };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_scroll_group, MP_ARG_INT, { .u_int = 1 } },
         { MP_QSTR_x, MP_ARG_INT, { .u_int = 0 } },
-        { MP_QSTR_y, MP_ARG_INT, { .u_int = 0 } }
+        { MP_QSTR_y, MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_wrap_x, MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_wrap_to, MP_ARG_INT, { .u_int = 0 } },
     };
 
     // Parse args.
@@ -258,7 +260,9 @@ mp_obj_t ModPicoGraphics_set_scroll_group_offset(size_t n_args, const mp_obj_t *
             args[ARG_x].u_int,
             args[ARG_y].u_int
         ),
-        args[ARG_scroll_group].u_int
+        args[ARG_scroll_group].u_int,
+        args[ARG_wrap_x].u_int,
+        args[ARG_wrap_to].u_int
     );
 
     return mp_const_none;

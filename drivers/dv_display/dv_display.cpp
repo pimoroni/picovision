@@ -66,6 +66,9 @@ namespace pimoroni {
     if (frame_width_ == 0) frame_width = display_width_;
     else frame_width = frame_width_;
 
+    // Internal frame width should be a multiple of 4.
+    if (frame_width & 3) frame_width += 4 - (frame_width & 3);
+
     if (frame_height_ == 0) frame_height = display_height_;
     else frame_height = frame_height_;
 
@@ -211,9 +214,23 @@ namespace pimoroni {
 #endif
   }
 
-  void DVDisplay::set_display_offset(const Point& p, int idx) {
-    int32_t offset = (int32_t)point_to_address(p) - (int32_t)point_to_address({0,0});
-    i2c->write_bytes(I2C_ADDR, I2C_REG_SCROLL_BASE + 4*(idx-1), (uint8_t*)&offset, 4);
+  void DVDisplay::set_display_offset(const Point& p, int idx, int wrap_from_x, int wrap_to_x) {
+    uint8_t scroll_config[8];
+    int16_t* wrap_position = (int16_t*)&scroll_config[0];
+    int16_t* wrap_offset = (int16_t*)&scroll_config[2];
+    int32_t* addr_offset = (int32_t*)&scroll_config[4];
+
+    if (wrap_from_x > p.x && wrap_from_x < p.x + display_width) {
+      *wrap_position = (wrap_from_x - p.x) * pixel_size();
+      *wrap_offset = (wrap_to_x - wrap_from_x) * pixel_size();
+    }
+    else {
+      *wrap_position = 0;
+      *wrap_offset = 0;
+    }
+
+    *addr_offset = (int32_t)point_to_address(p) - (int32_t)point_to_address({0,0});
+    i2c->write_bytes(I2C_ADDR, I2C_REG_SCROLL_BASE + 8*(idx-1), scroll_config, 8);
   }
 
   void DVDisplay::set_scroll_idx_for_lines(int idx, int miny, int maxy) {
@@ -226,14 +243,14 @@ namespace pimoroni {
       int maxj = std::min(buf_size, maxy - i);
       if (idx >= 0) {
         for (int j = 0; j < maxj; ++j) {
-          buf[j] = line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 6) + base_address;
+          buf[j] = line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 3) + base_address;
         }
       }
       else {
         ram.read_blocking(addr, buf, maxj);
         for (int j = 0; j < maxj; ++j) {
           buf[j] &= 0xC0000000;
-          buf[j] |= line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 6) + base_address;
+          buf[j] |= line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 3) + base_address;
         }
       }
       ram.write(addr, buf, maxj * 4);
