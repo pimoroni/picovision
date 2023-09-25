@@ -337,7 +337,7 @@ def main_game_running(t_current):
 
     level_offset = int(current_x / SLICE_WIDTH)
 
-    display.set_scroll_group_offset(1, current_x % GAME_WIDTH, 0)
+    display.set_scroll_group_offset(1, current_x % 20, 0, GAME_WIDTH)
     display.set_scroll_group_offset(3, cloud_x % GAME_WIDTH, 0)
 
     spritelist.clear()
