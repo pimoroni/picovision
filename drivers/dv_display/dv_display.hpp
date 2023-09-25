@@ -67,6 +67,7 @@ namespace pimoroni {
     static constexpr uint I2C_ADDR = 0x0D;
     static constexpr uint I2C_REG_SET_RES = 0xFC;
     static constexpr uint I2C_REG_START = 0xFD;
+    static constexpr uint I2C_REG_STOP = 0xFF;
     static constexpr uint I2C_REG_GPIO = 0xC0;
     static constexpr uint I2C_REG_LED = 0xC1;
     static constexpr uint I2C_REG_GPIO_HI = 0xC8;
@@ -75,14 +76,16 @@ namespace pimoroni {
     static constexpr uint I2C_REG_GPIO_HI_PULL_UP = 0xCB;
     static constexpr uint I2C_REG_GPIO_HI_PULL_DOWN = 0xCC;
     static constexpr uint I2C_REG_GPU_TEMP = 0xC6;
-    static constexpr uint I2C_REG_EDID = 0xED;
-    static constexpr uint I2C_REG_PALETTE_INDEX = 0xEE;
-    static constexpr uint I2C_REG_SCROLL_BASE = 0xF0;
+    static constexpr uint I2C_REG_EDID = 0xFB;
+    static constexpr uint I2C_REG_PALETTE_INDEX = 0xF8;
+    static constexpr uint I2C_REG_SCROLL_BASE = 0xE0;
 
     //--------------------------------------------------
     // Variables
     //--------------------------------------------------
   protected:
+    friend void vsync_callback();
+
     // Ram accessed through the APS6404 driver
     APS6404 ram;
 
@@ -130,6 +133,8 @@ namespace pimoroni {
     // Methods
     //--------------------------------------------------
     public:
+      static void preinit();
+  
       void test(void){
         char writeBuffer[256];
         char readBuffer[256];
@@ -175,6 +180,11 @@ namespace pimoroni {
       void flip();
       void reset();
 
+      // flip_async queues a flip but returns without blocking.
+      // You must call wait_for_flip before doing any more reads or writes, defining sprites, etc.
+      void flip_async();
+      void wait_for_flip();
+
       // Define the data for a sprite, the specified data index can then be supplied
       // to set_sprite to use the sprite.  Up to 1024 sprites can be defined.
       // Each sprite can be up to 2KB big, with a maximum width or height of 64 pixels.
@@ -213,10 +223,11 @@ namespace pimoroni {
       void write_palette_pixel_span(const Point &p, uint l, uint8_t* data);
       void read_palette_pixel_span(const Point &p, uint l, uint8_t *data);
 
-      // Set the scroll offset for a set of scanlines on the display.  There are 3 scroll offsets, indexes 1-3.
+      // Set the scroll offset and wrap for a set of scanlines on the display.  There are 3 scroll offsets, indexes 1-3.
       // By default, all scanlines are offset by scroll idx 1, so setting this effectively moves the 
       // top left corner of the display within the frame.
-      void set_display_offset(const Point& p, int idx=1);
+      // When reading across the frame, the display will skip from `from_x` to `to_x`.
+      void set_display_offset(const Point& p, int idx=1, int wrap_from_x=0, int wrap_to_x=0);
 
       // Configure the scroll offset index to use for a set of scanlines (inclusive of miny, exclusive of maxy),
       // this applies to the current bank only - you need to set again after flipping to apply the same setting to the other bank.
@@ -250,7 +261,7 @@ namespace pimoroni {
       // Raw access to frame buffer
       uint32_t point_to_address(const Point& p) const;
       int pixel_size() const;
-      int frame_row_stride() const { return (int)frame_width * 6; }
+      int frame_row_stride() const { return (int)frame_width * 3; }
       void raw_read_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.read(address, data, len_in_words); }
       void raw_write_async(uint32_t address, uint32_t* data, uint32_t len_in_words) { ram.write(address, data, len_in_words << 2); }
       void raw_write_async_bytes(uint32_t address, uint32_t* data, uint32_t len_in_bytes) { ram.write(address, data, len_in_bytes); }
@@ -258,7 +269,7 @@ namespace pimoroni {
 
     protected:
       uint8_t palette[NUM_PALETTES * PALETTE_SIZE * 3] alignas(4);
-      bool rewrite_header = false;
+      uint8_t rewrite_header = 0;
       uint8_t rewrite_palette = 0;
       uint8_t current_palette = 0;
 
@@ -284,15 +295,15 @@ namespace pimoroni {
       void define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data, uint32_t bytes_per_pixel);
 
       uint32_t point_to_address16(const Point &p) const {
-        return base_address + ((p.y * (uint32_t)frame_width * 3) + p.x) * 2;
+        return base_address + (p.y * (uint32_t)frame_width * 3) + (p.x * 2);
       }
 
       uint32_t point_to_address_palette(const Point &p) const {
-        return base_address + (p.y * (uint32_t)frame_width * 6) + p.x;
+        return base_address + (p.y * (uint32_t)frame_width * 3) + p.x;
       }
 
       uint32_t point_to_address24(const Point &p) const {
-        return base_address + ((p.y * (uint32_t)frame_width * 2) + p.x) * 3;
+        return base_address + ((p.y * (uint32_t)frame_width) + p.x) * 3;
       }
   };
 }

@@ -6,6 +6,17 @@
 
 using namespace pimoroni;
 
+
+namespace {
+    class DV_preinit {
+        public:
+        DV_preinit() {
+            DVDisplay::preinit();
+        }
+    };
+    DV_preinit dv_preinit __attribute__ ((init_priority (101))) ;
+}
+
 extern "C" {
 #include "PNGdec.h"
 #include "picographics.h"
@@ -229,13 +240,15 @@ mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in) {
 }
 
 // DV Display specific functions
-mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_scroll_group, ARG_x, ARG_y };
+mp_obj_t ModPicoGraphics_set_scroll_group_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_scroll_group, ARG_x, ARG_y, ARG_wrap_x, ARG_wrap_to };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_scroll_group, MP_ARG_INT, { .u_int = 1 } },
         { MP_QSTR_x, MP_ARG_INT, { .u_int = 0 } },
-        { MP_QSTR_y, MP_ARG_INT, { .u_int = 0 } }
+        { MP_QSTR_y, MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_wrap_x, MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_wrap_to, MP_ARG_INT, { .u_int = 0 } },
     };
 
     // Parse args.
@@ -247,13 +260,15 @@ mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_a
             args[ARG_x].u_int,
             args[ARG_y].u_int
         ),
-        args[ARG_scroll_group].u_int
+        args[ARG_scroll_group].u_int,
+        args[ARG_wrap_x].u_int,
+        args[ARG_wrap_to].u_int
     );
 
     return mp_const_none;
 }
 
-mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_t *args) {
+mp_obj_t ModPicoGraphics_set_scroll_group_for_lines(size_t n_args, const mp_obj_t *args) {
     enum { ARG_self, ARG_scroll_index, ARG_min_y, ARG_max_y };
 
     dv_display.set_scroll_idx_for_lines(
@@ -1166,6 +1181,42 @@ mp_obj_t ModPicoGraphics_line(size_t n_args, const mp_obj_t *args) {
     }
 
     return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_loop(mp_obj_t self_in, mp_obj_t update, mp_obj_t render) {
+    (void)self_in;
+    /*
+    TODO: Uh how do we typecheck a function?
+    if(!mp_obj_is_type(update, &mp_type_function)) {
+        mp_raise_TypeError("update(ticks_ms) must be a function.");
+    }
+    if(!mp_obj_is_type(render, &mp_type_function)) {
+        mp_raise_TypeError("render(ticks_ms) must be a function.");
+    }*/
+    //ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    absolute_time_t t_start = get_absolute_time();
+    mp_obj_t result;
+    while(true) {
+        uint32_t tick = absolute_time_diff_us(t_start, get_absolute_time()) / 1000;
+        result = mp_call_function_1(update, mp_obj_new_int(tick));
+        if (result == mp_const_false) break;
+        dv_display.wait_for_flip();
+        result = mp_call_function_1(render, mp_obj_new_int(tick));
+        if (result == mp_const_false) break;
+        dv_display.flip_async();
+        MICROPY_EVENT_POLL_HOOK
+    }
+    return mp_const_none;
+}
+
+mp_obj_t ModPicoGraphics_is_button_x_pressed(mp_obj_t self_in) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    return self->display->is_button_x_pressed() ? mp_const_true : mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_is_button_a_pressed(mp_obj_t self_in) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    return self->display->is_button_a_pressed() ? mp_const_true : mp_const_false;
 }
 
 mp_obj_t ModPicoGraphics_get_i2c(mp_obj_t self_in) {

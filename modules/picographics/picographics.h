@@ -30,8 +30,8 @@ extern const mp_obj_type_t ModPicoGraphics_type;
 extern mp_obj_t ModPicoGraphics_get_required_buffer_size(mp_obj_t display_in, mp_obj_t pen_type_in);
 
 // DV Display specific functions
-extern mp_obj_t ModPicoGraphics_set_display_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
-extern mp_obj_t ModPicoGraphics_set_scroll_index_for_lines(size_t n_args, const mp_obj_t *args);
+extern mp_obj_t ModPicoGraphics_set_scroll_group_offset(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
+extern mp_obj_t ModPicoGraphics_set_scroll_group_for_lines(size_t n_args, const mp_obj_t *args);
 extern mp_obj_t ModPicoGraphics_tilemap(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 extern mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
 
@@ -39,9 +39,6 @@ extern mp_obj_t ModPicoGraphics_load_animation(size_t n_args, const mp_obj_t *po
 extern mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 
 extern mp_obj_t ModPicoGraphics_update(mp_obj_t self_in);
-extern mp_obj_t ModPicoGraphics_partial_update(size_t n_args, const mp_obj_t *args);
-extern mp_obj_t ModPicoGraphics_set_backlight(mp_obj_t self_in, mp_obj_t brightness);
-extern mp_obj_t ModPicoGraphics_set_update_speed(mp_obj_t self_in, mp_obj_t update_speed);
 
 // Palette management
 extern mp_obj_t ModPicoGraphics_update_pen(size_t n_args, const mp_obj_t *args);
@@ -88,10 +85,14 @@ extern mp_obj_t ModPicoGraphics_clear_sprite(mp_obj_t self_in, mp_obj_t slot);
 // Utility
 extern mp_obj_t ModPicoGraphics_set_font(mp_obj_t self_in, mp_obj_t font);
 extern mp_obj_t ModPicoGraphics_get_bounds(mp_obj_t self_in);
-extern mp_obj_t ModPicoGraphics_set_framebuffer(mp_obj_t self_in, mp_obj_t framebuffer);
-
-extern mp_int_t ModPicoGraphics_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags);
 
 extern mp_obj_t ModPicoGraphics_get_i2c(mp_obj_t self_in);
 
 extern mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in);
+
+// IO IO
+extern mp_obj_t ModPicoGraphics_is_button_x_pressed(mp_obj_t self_in);
+extern mp_obj_t ModPicoGraphics_is_button_a_pressed(mp_obj_t self_in);
+
+// Loop
+extern mp_obj_t ModPicoGraphics_loop(mp_obj_t self_in, mp_obj_t update, mp_obj_t render);

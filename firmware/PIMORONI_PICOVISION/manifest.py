@@ -11,3 +11,5 @@ require("aioble")
 
 require("urllib.urequest")
 require("umqtt.simple")
+
+require("sdcard")

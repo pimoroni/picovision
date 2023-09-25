@@ -23,8 +23,41 @@ static void my_thread_yield() {
 }
 #endif
 
-
 namespace pimoroni {
+  volatile bool enable_switch_on_vsync = false;
+
+  void vsync_callback() {
+    if (gpio_get_irq_event_mask(DVDisplay::VSYNC) & GPIO_IRQ_EDGE_RISE) {
+      gpio_acknowledge_irq(DVDisplay::VSYNC, GPIO_IRQ_EDGE_RISE);
+
+      if (enable_switch_on_vsync) {
+        // Toggle RAM_SEL pin
+        gpio_xor_mask(1 << DVDisplay::RAM_SEL);
+        enable_switch_on_vsync = false;
+      }
+    }
+  }
+
+  void DVDisplay::preinit() {
+    gpio_init(RAM_SEL);
+    gpio_put(RAM_SEL, 0);
+    gpio_set_dir(RAM_SEL, GPIO_OUT);
+
+    gpio_init(VSYNC);
+    gpio_set_dir(VSYNC, GPIO_IN);
+
+    swd_load_program(section_addresses, section_data, section_data_len, sizeof(section_addresses) / sizeof(section_addresses[0]), 0x20000001, 0x15004000, true);
+
+#ifndef MICROPY_BUILD_TYPE
+      // We set a high priority shared handler on the IO_IRQ_BANK0 interrupt, instead
+      // of using the pico-sdk methods for GPIO interrupts, because MicroPython sets up its
+      // own shared handler replacing the SDK method.  By setting our handler high priority
+      // we get in before either the pico-sdk or Micropython handler, so it works in both cases.
+      gpio_set_irq_enabled(VSYNC, GPIO_IRQ_EDGE_RISE, true);
+      irq_add_shared_handler(IO_IRQ_BANK0, vsync_callback, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY + 1);
+      irq_set_enabled(IO_IRQ_BANK0, true);
+#endif
+  };
 
   bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
     display_width = display_width_;
@@ -32,6 +65,9 @@ namespace pimoroni {
 
     if (frame_width_ == 0) frame_width = display_width_;
     else frame_width = frame_width_;
+
+    // Internal frame width should be a multiple of 4.
+    if (frame_width & 3) frame_width += 4 - (frame_width & 3);
 
     if (frame_height_ == 0) frame_height = display_height_;
     else frame_height = frame_height_;
@@ -87,16 +123,7 @@ namespace pimoroni {
       return false;
     }
 
-    gpio_init(RAM_SEL);
     gpio_put(RAM_SEL, 0);
-    gpio_set_dir(RAM_SEL, GPIO_OUT);
-
-    gpio_init(VSYNC);
-    gpio_set_dir(VSYNC, GPIO_IN);
-
-    sleep_ms(200);
-    swd_load_program(section_addresses, section_data, section_data_len, sizeof(section_addresses) / sizeof(section_addresses[0]), 0x20000001, 0x15004000, true);
-
     ram.init();
     bank = 0;
     write_header();
@@ -110,7 +137,7 @@ namespace pimoroni {
 
     bank = 0;
     gpio_put(RAM_SEL, 0);
-    sleep_ms(100);
+    sleep_ms(50);
 
     mp_printf(&mp_plat_print, "Start I2C\n");
 
@@ -123,10 +150,20 @@ namespace pimoroni {
 
     set_mode(mode_);
 
+#ifdef MICROPY_BUILD_TYPE
+      // We set a high priority shared handler on the IO_IRQ_BANK0 interrupt, instead
+      // of using the pico-sdk methods for GPIO interrupts, because MicroPython sets up its
+      // own shared handler replacing the SDK method.  By setting our handler high priority
+      // we get in before either the pico-sdk or Micropython handler, so it works in both cases.
+      gpio_set_irq_enabled(VSYNC, GPIO_IRQ_EDGE_RISE, true);
+      irq_add_shared_handler(IO_IRQ_BANK0, vsync_callback, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY + 1);
+      irq_set_enabled(IO_IRQ_BANK0, true);
+#endif
+
     return true;
   }
   
-  void DVDisplay::flip() {
+  void DVDisplay::flip_async() {
     if (mode == MODE_PALETTE) {
       if (rewrite_palette > 0) {
         write_palette();
@@ -141,29 +178,59 @@ namespace pimoroni {
       ram.write(point_to_address16(pixel_buffer_location), pixel_buffer, pixel_buffer_x << 1);
       pixel_buffer_location.y = -1;
     }
-    bank ^= 1;
-    ram.wait_for_finish_blocking();
-    while (gpio_get(VSYNC) == 0);
-    gpio_put(RAM_SEL, bank);
-
-    // Yield the thread now the time sensitive wait is over
-    // TODO: Better sleep, and use an interrupt handler
-    my_thread_yield();
 
     if (rewrite_header) {
       set_scroll_idx_for_lines(-1, 0, display_height);
       write_sprite_table();
-      rewrite_header = false;
+      --rewrite_header;
+    }
+
+    bank ^= 1;
+    ram.wait_for_finish_blocking();
+
+    enable_switch_on_vsync = true;
+  }
+
+  void DVDisplay::flip() {
+    flip_async();
+    wait_for_flip();
+  }
+
+  void DVDisplay::wait_for_flip() {
+    while (enable_switch_on_vsync) {
+      // Waiting for IRQ handler to do flip.
+      my_thread_yield();
     }
   }
 
   void DVDisplay::reset() {
-    swd_reset();
+    for(auto i = 0u; i < MAX_DISPLAYED_SPRITES; i++) {
+      clear_sprite(i);
+    }
+    //swd_reset();
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_STOP, 1);
+#ifdef MICROPY_BUILD_TYPE
+    irq_remove_handler(IO_IRQ_BANK0, vsync_callback);
+#endif
   }
 
-  void DVDisplay::set_display_offset(const Point& p, int idx) {
-    int32_t offset = (int32_t)point_to_address(p) - (int32_t)point_to_address({0,0});
-    i2c->write_bytes(I2C_ADDR, I2C_REG_SCROLL_BASE + 4*(idx-1), (uint8_t*)&offset, 4);
+  void DVDisplay::set_display_offset(const Point& p, int idx, int wrap_from_x, int wrap_to_x) {
+    uint8_t scroll_config[8];
+    int16_t* wrap_position = (int16_t*)&scroll_config[0];
+    int16_t* wrap_offset = (int16_t*)&scroll_config[2];
+    int32_t* addr_offset = (int32_t*)&scroll_config[4];
+
+    if (wrap_from_x > p.x && wrap_from_x < p.x + display_width) {
+      *wrap_position = (wrap_from_x - p.x) * pixel_size();
+      *wrap_offset = (wrap_to_x - wrap_from_x) * pixel_size();
+    }
+    else {
+      *wrap_position = 0;
+      *wrap_offset = 0;
+    }
+
+    *addr_offset = (int32_t)point_to_address(p) - (int32_t)point_to_address({0,0});
+    i2c->write_bytes(I2C_ADDR, I2C_REG_SCROLL_BASE + 8*(idx-1), scroll_config, 8);
   }
 
   void DVDisplay::set_scroll_idx_for_lines(int idx, int miny, int maxy) {
@@ -176,14 +243,14 @@ namespace pimoroni {
       int maxj = std::min(buf_size, maxy - i);
       if (idx >= 0) {
         for (int j = 0; j < maxj; ++j) {
-          buf[j] = line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 6) + base_address;
+          buf[j] = line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 3) + base_address;
         }
       }
       else {
         ram.read_blocking(addr, buf, maxj);
         for (int j = 0; j < maxj; ++j) {
           buf[j] &= 0xC0000000;
-          buf[j] |= line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 6) + base_address;
+          buf[j] |= line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 3) + base_address;
         }
       }
       ram.write(addr, buf, maxj * 4);
@@ -407,12 +474,10 @@ namespace pimoroni {
   void DVDisplay::set_mode(Mode new_mode)
   {
     mode = new_mode;
-    rewrite_header = true;
-    set_scroll_idx_for_lines(-1, 0, display_height);
+    rewrite_header = 2;
     if (mode == MODE_PALETTE) {
       rewrite_palette = 2;
     }
-    write_sprite_table();
   }
   
   void DVDisplay::write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data)

@@ -189,7 +189,7 @@ void swd_initial_init(PIO pio, uint sm, uint swc, uint swd) {
     pio_sm_set_consecutive_pindirs(pio, sm, swd, 1, false);
 }
 
-void swd_program_init(PIO pio, uint sm, uint offset, uint swc, uint swd, bool read) {
+void swd_program_init(PIO pio, uint sm, uint offset, uint swc, uint swd, bool read, float clkdiv) {
     pio_sm_config c = read ? swd_read_program_get_default_config(offset) : swd_write_program_get_default_config(offset);
     sm_config_set_in_pins(&c, swd);
     sm_config_set_in_shift(&c, false, false, 32);
@@ -197,13 +197,13 @@ void swd_program_init(PIO pio, uint sm, uint offset, uint swc, uint swd, bool re
     sm_config_set_out_pins(&c, swd, 1);
     sm_config_set_out_shift(&c, true, false, 32);
     sm_config_set_sideset_pins(&c, swc);
-    sm_config_set_clkdiv(&c, 60.f);
+    sm_config_set_clkdiv(&c, clkdiv);
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
 }
 
-void swd_raw_program_init(PIO pio, uint sm, uint offset, uint swc, uint swd, bool read) {
+void swd_raw_program_init(PIO pio, uint sm, uint offset, uint swc, uint swd, bool read, float clkdiv) {
     pio_sm_config c = read ? swd_raw_read_program_get_default_config(offset) : swd_raw_write_program_get_default_config(offset);
     sm_config_set_in_pins(&c, swd);
     sm_config_set_in_shift(&c, false, false, 32);
@@ -211,7 +211,7 @@ void swd_raw_program_init(PIO pio, uint sm, uint offset, uint swc, uint swd, boo
     sm_config_set_out_pins(&c, swd, 1);
     sm_config_set_out_shift(&c, true, true, 32);
     sm_config_set_sideset_pins(&c, swc);
-    sm_config_set_clkdiv(&c, 60.f);
+    sm_config_set_clkdiv(&c, clkdiv);
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
