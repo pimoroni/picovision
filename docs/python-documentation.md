@@ -170,6 +170,19 @@ display.set_scroll_group_offset(1, X, Y)
 
 The first argument is the scroll group (it can be either 1, 2 or 3).
 
+You can also wrap the scroll horizontally, by specifying the maximum X value within the frame, and optionally the X value to wrap back to (the default is zero).
+
+```python
+display.set_scroll_group_offset(1, X, Y, WRAP_X_AT, WRAP_X_TO)
+```
+
+This can be used to continuously horizontally scroll an image that is the width of the display or larger by setting WRAP_X to the frame width and slowly increasing the X value.  For example:
+
+```python
+scroll = int(time.ticks_ms() / 60) % DISPLAY_WIDTH
+display.set_scroll_group_offset(1, scroll, 0, DISPLAY_WIDTH)
+```
+
 ### Frame vs Display
 
 The `PicoGraphics` constructor can optionally take `frame_width` and `frame_height` arguments which specify a larger drawing area that you can pan around with scroll offsets. This is useful to mask slow drawing of new elements, or to contain additional horizontal data that the scanline scrolling could bring into view.
