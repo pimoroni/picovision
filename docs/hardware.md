@@ -79,15 +79,15 @@ There is, additionally, a hard limit of 80 sprites (32 in a widescreen build).
 
 Each sprite can reference an image up to 4kB in size, this equates to 64x32 pixels in RGB555 mode. Larger sprites will occupy more of the active sprite buffer and permit fewer similtaneous active sprites.  Roughly speaking, you can get about 80 16x16 sprites or 35 32x32 sprites on screen at once before starting to exceed the available clock cycles on the GPU - if that happens red lines will be displayed.  Displaying multiple copies of the same sprite is slightly cheaper than displaying different sprites, and a given sprite image is only copied to the active sprite buffer once no matter how many times it's displayed.
 
-Larger images also occupy more consecutive image indices, for example a 64x32 (4kB) image loaded at slot 1 would occupy indices 1, and 2.
+Images larger than 2kB also occupy two consecutive image indices, for example a 64x32 RGB555 image (4kB) loaded at index 1 would occupy indices 1 and 2.  Sprites 32x32 or smaller only use one image index.
 
-Displaying this 64x32 image will have the same cost as displaying four 32x32 pixel sprites, limiting you to fewer consecutive onscreen sprites than the normal 32 (or 16) limit. You can balance this with smaller sprites to return to the 32x32 limit.
+Displaying this 64x32 image will have roughly the same cost as displaying eight 16x16 pixel sprites, limiting you to fewer consecutive onscreen sprites than the normal 80 (or 32) limit. You can balance this with smaller sprites to get back within the GPUs budget.
 
 In summary:
 
 1. There's a hard limit of 80 sprites on screen and a total of 56kB active sprite data
 2. There's a hard limit of 10 simultaneous sprites per scanline
-3. Each sprite can be up to 4kB in size, with a maximum width of 64 pixelse and height of 32 pixels
+3. Each sprite can be up to 4kB in size, with a maximum width of 64 pixels and height of 32 pixels
 4. Sprite images are stored in PSRAM in "indexed" locations
 5. A single sprite, referenced by its "slot", specifies an index for the image data, X and Y coordinates, vertical scale and blend mode
 6. Larger images can be used, but will occupy more of the 56kB active sprite data and so potentially limit you to fewer sprites
@@ -145,4 +145,4 @@ During VSync, data is loaded into the active sprite buffer in GPU RAM (that's th
 
 Additionally a series of sprite patch buffers - there are ten per scanline - are configured, pointing to the relevant sprite data for each scanline.
 
-When the scanline is being written out to the screen, the patches from the sprite patch buffers are blended into the line immediately before it is encoded into HDMI symbolsfor the display.
+When the scanline is being written out to the screen, the patches from the sprite patch buffers are blended into the line immediately before it is encoded into HDMI symbols for the display.

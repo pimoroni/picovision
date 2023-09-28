@@ -227,7 +227,7 @@ namespace pimoroni {
       // By default, all scanlines are offset by scroll idx 1, so setting this effectively moves the 
       // top left corner of the display within the frame.
       // When reading across the frame, the display will skip from `from_x` to `to_x`.
-      void set_display_offset(const Point& p, int idx=1, int wrap_from_x=0, int wrap_to_x=0);
+      void setup_scroll_group(const Point& p, int idx=1, int wrap_from_x=0, int wrap_from_y=0, int wrap_to_x=0, int wrap_to_y=0);
 
       // Configure the scroll offset index to use for a set of scanlines (inclusive of miny, exclusive of maxy),
       // this applies to the current bank only - you need to set again after flipping to apply the same setting to the other bank.

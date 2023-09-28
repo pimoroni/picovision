@@ -152,7 +152,7 @@ Sprite images can be up to 64x32 big, but if the data is larger than 2kB then th
 
 ### Scanlines
 
-You can configure the "GPU" to scroll up to three groups of scanlines in groups 1, 2 and 3. The following code cuts a 240 pixel tall frame into three horizontal slices:
+You can configure the "GPU" to scroll up to seven groups of scanlines in groups 1 to 7. The following code cuts a 240 pixel tall frame into three horizontal slices:
 
 ```python
 display.set_scroll_group_for_lines(1, 0, 80)
@@ -168,7 +168,20 @@ Once the scroll groups have been configured, you can ask the "GPU" to offset the
 display.set_scroll_group_offset(1, X, Y)
 ```
 
-The first argument is the scroll group (it can be either 1, 2 or 3).
+The first argument is the scroll group (in the range 1 to 7).
+
+You can also wrap the scroll, by specifying the maximum X and Y values within the frame, and optionally the X and Y value to wrap back to (0,0 by default).
+
+```python
+display.set_scroll_group_offset(1, X, Y, WRAP_X_AT, WRAP_Y_AT, WRAP_X_TO, WRAP_Y_TO)
+```
+
+This can be used to continuously scroll an image that is the width of the display or larger by setting WRAP_X to the frame width and slowly increasing the X value.  For example:
+
+```python
+scroll = int(time.ticks_ms() / 60) % DISPLAY_WIDTH
+display.set_scroll_group_offset(1, scroll, 0, DISPLAY_WIDTH)
+```
 
 ### Frame vs Display
 

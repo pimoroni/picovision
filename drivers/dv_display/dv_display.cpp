@@ -214,31 +214,45 @@ namespace pimoroni {
 #endif
   }
 
-  void DVDisplay::set_display_offset(const Point& p, int idx, int wrap_from_x, int wrap_to_x) {
-    uint8_t scroll_config[8];
-    int16_t* wrap_position = (int16_t*)&scroll_config[0];
-    int16_t* wrap_offset = (int16_t*)&scroll_config[2];
-    int32_t* addr_offset = (int32_t*)&scroll_config[4];
-
+  void DVDisplay::setup_scroll_group(const Point& p, int idx, int wrap_from_x, int wrap_from_y, int wrap_to_x, int wrap_to_y) {
+    int16_t wrap_position = 0;
+    int16_t wrap_offset = 0;
     if (wrap_from_x > p.x && wrap_from_x < p.x + display_width) {
-      *wrap_position = (wrap_from_x - p.x) * pixel_size();
-      *wrap_offset = (wrap_to_x - wrap_from_x) * pixel_size();
-    }
-    else {
-      *wrap_position = 0;
-      *wrap_offset = 0;
+      wrap_position = (wrap_from_x - p.x) * pixel_size();
+      wrap_offset = (wrap_to_x - wrap_from_x) * pixel_size();
     }
 
-    *addr_offset = (int32_t)point_to_address(p) - (int32_t)point_to_address({0,0});
-    i2c->write_bytes(I2C_ADDR, I2C_REG_SCROLL_BASE + 8*(idx-1), scroll_config, 8);
+    int32_t addr_offset = (int32_t)point_to_address(p) - (int32_t)point_to_address({0,0});
+    int32_t addr_offset2 = (int32_t)point_to_address({p.x, p.y+wrap_to_y}) - (int32_t)point_to_address({0,wrap_from_y});
+    uint32_t max_addr = 0;
+    if (wrap_from_y > p.y && wrap_from_y < p.y + display_height) {
+      max_addr = point_to_address({0, wrap_from_y});
+    }
+
+    uint8_t scroll_config[13];
+    scroll_config[0] = addr_offset & 0xFF;
+    scroll_config[1] = (addr_offset >> 8) & 0xFF;
+    scroll_config[2] = (addr_offset >> 16) & 0xFF;
+    scroll_config[3] = max_addr & 0xFF;
+    scroll_config[4] = (max_addr >> 8) & 0xFF;
+    scroll_config[5] = (max_addr >> 16) & 0xFF;
+    scroll_config[6] = addr_offset2 & 0xFF;
+    scroll_config[7] = (addr_offset2 >> 8) & 0xFF;
+    scroll_config[8] = (addr_offset2 >> 16) & 0xFF;
+    scroll_config[9] = wrap_position & 0xFF;
+    scroll_config[10] = (wrap_position >> 8) & 0xFF;
+    scroll_config[11] = wrap_offset & 0xFF;
+    scroll_config[12] = (wrap_offset >> 8) & 0xFF;
+
+    i2c->write_bytes(I2C_ADDR, I2C_REG_SCROLL_BASE + idx, scroll_config, 13);
   }
 
   void DVDisplay::set_scroll_idx_for_lines(int idx, int miny, int maxy) {
     constexpr int buf_size = 32;
     uint32_t buf[buf_size];
     uint addr = 4 * (7 + miny);
-    uint line_type = (uint)mode << 28;
-    if (idx >= 0) line_type |= (uint)idx << 30;
+    uint line_type = (uint)mode << 27;
+    if (idx >= 0) line_type |= (uint)idx << 29;
     for (int i = miny; i < maxy; i += buf_size) {
       int maxj = std::min(buf_size, maxy - i);
       if (idx >= 0) {
