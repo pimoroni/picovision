@@ -223,7 +223,7 @@ namespace pimoroni {
       void write_palette_pixel_span(const Point &p, uint l, uint8_t* data);
       void read_palette_pixel_span(const Point &p, uint l, uint8_t *data);
 
-      // Set the scroll offset and wrap for a set of scanlines on the display.  There are 3 scroll offsets, indexes 1-3.
+      // Set the scroll offset and wrap for a set of scanlines on the display.  There are 7 scroll offsets, indexes 1-7.
       // By default, all scanlines are offset by scroll idx 1, so setting this effectively moves the 
       // top left corner of the display within the frame.
       // When reading across the frame, the display will skip from `from_x` to `to_x`.
