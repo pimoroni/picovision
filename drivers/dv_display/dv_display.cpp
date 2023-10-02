@@ -215,6 +215,10 @@ namespace pimoroni {
   }
 
   void DVDisplay::setup_scroll_group(const Point& p, int idx, int wrap_from_x, int wrap_from_y, int wrap_to_x, int wrap_to_y) {
+    if (idx < 1 || idx > 7) {
+      return;
+    }
+
     int16_t wrap_position = 0;
     int16_t wrap_offset = 0;
     if (wrap_from_x > p.x && wrap_from_x < p.x + display_width) {
@@ -263,7 +267,7 @@ namespace pimoroni {
       else {
         ram.read_blocking(addr, buf, maxj);
         for (int j = 0; j < maxj; ++j) {
-          buf[j] &= 0xC0000000;
+          buf[j] &= 0xE0000000;
           buf[j] |= line_type + ((uint32_t)h_repeat << 24) + ((i + j) * frame_width * 3) + base_address;
         }
       }
