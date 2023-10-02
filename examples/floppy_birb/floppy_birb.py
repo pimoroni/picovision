@@ -4,11 +4,14 @@ import random
 import machine
 import gc
 import pngdec
-from picographics import PicoGraphics, PEN_RGB555, WIDESCREEN
+from picographics import PicoGraphics, PEN_RGB555
 from picovector import PicoVector, Polygon, ANTIALIAS_X16
 
 
-display = PicoGraphics(PEN_RGB555, 720, 480, frame_width=720 * 2, frame_height=480)
+DISPLAY_WIDTH = 720
+DISPLAY_HEIGHT = 480
+
+display = PicoGraphics(PEN_RGB555, DISPLAY_WIDTH, DISPLAY_HEIGHT, frame_width=DISPLAY_WIDTH * 1, frame_height=DISPLAY_HEIGHT)
 png = pngdec.PNG(display)
 
 # Main difficulty settings
@@ -45,14 +48,9 @@ for _ in range(2):
     display.load_sprite("pipe-cap.png", SPRITE_PIPE_CAP)
     display.load_sprite("goal.png", SPRITE_GOAL)
     # The individual frames of the birb
-    display.load_sprite("birb-sprite.png", SPRITE_BIRB_1, (0, 32, 32, 32))
-    display.load_sprite("birb-sprite.png", SPRITE_BIRB_2, (32, 32, 32, 32))
-    display.load_sprite("birb-sprite.png", SPRITE_BIRB_3, (64, 32, 32, 32))
+    display.load_animation(SPRITE_BIRB_1, "birb-sprite.png", (32, 32), source=(0, 0, 128, 32))
     # The HQ building, needs four sprites to assemble
-    display.load_sprite("pimoroni-hq.png", HQ_1, (0, 0, 32, 17))
-    display.load_sprite("pimoroni-hq.png", HQ_2, (32, 0, 32, 17))
-    display.load_sprite("pimoroni-hq.png", HQ_3, (64, 0, 32, 17))
-    display.load_sprite("pimoroni-hq.png", HQ_4, (96, 0, 32, 17))
+    display.load_animation(HQ_1, "pimoroni-hq.png", (32, 17))
     display.update()
 
 vector = PicoVector(display)
@@ -74,13 +72,12 @@ GRASS = display.create_pen(0x7d, 0xe4, 0x8c)
 
 WIDTH, HEIGHT = display.get_bounds()
 
-GAME_WIDTH = int(WIDTH / 2)
+GAME_WIDTH = int(WIDTH)
 GAME_HEIGHT = int(HEIGHT / 3) * 2
 CLOUD_HEIGHT = 100
 
-SLICES = PIPES_PER_SCREEN * 2
+SLICES = PIPES_PER_SCREEN
 SLICE_WIDTH = int(WIDTH / SLICES)
-OFFSCREEN_SLICES = int(SLICES / 2)
 
 PIPE_WIDTH = 20
 CAP_WIDTH = 26
@@ -117,7 +114,16 @@ for _ in range(2):
     display.set_scroll_group_for_lines(1, GAME_BOTTOM, GAME_BOTTOM + 20)
 
     # For scrolling the sky/ground behind the pipes
-    display.set_scroll_group_for_lines(3, GAME_TOP, GAME_BOTTOM)
+    display.set_scroll_group_for_lines(3, GAME_TOP, GAME_TOP + CLOUD_HEIGHT)                            # Upper clouds
+    display.set_scroll_group_for_lines(4, GAME_BOTTOM - CLOUD_HEIGHT, GAME_BOTTOM - CLOUD_HEIGHT + 30)  # Lower clouds
+    display.set_scroll_group_for_lines(5, GAME_BOTTOM - CLOUD_HEIGHT + 30, GAME_BOTTOM)                 # Ground
+
+    # Avoid startup flash of garbled scroll offsets
+    display.set_scroll_group_offset(1, 0, 0)
+    display.set_scroll_group_offset(2, 0, 0)
+    display.set_scroll_group_offset(3, 0, 0)
+    display.set_scroll_group_offset(4, 0, 0)
+    display.set_scroll_group_offset(5, 0, 0)
 
     display.update()
 
@@ -194,7 +200,6 @@ def prep_game():
 
         png.open_file("ground.png")
         png.decode(0, GAME_BOTTOM - CLOUD_HEIGHT)
-        png.decode(GAME_WIDTH, GAME_BOTTOM - CLOUD_HEIGHT)
 
         display.set_clip(0, 0, WIDTH, HEIGHT)
 
@@ -221,7 +226,7 @@ def reset_game():
 class SpriteList:
     def __init__(self):
         self.items = []
-        self.max_sprites = 16 if WIDESCREEN else 32
+        self.max_sprites = 32
 
     def add(self, image, x, y, v_scale=1, force=False):
         if len(self.items) == self.max_sprites:
@@ -331,25 +336,29 @@ def main_game_running(t_current):
     global end_index
 
     current_x = int(t_current / (20.0 / GAME_SPEED))
-    cloud_x = int(t_current / (100.0 / GAME_SPEED))
+    cloud_top_x = int(t_current / (80.0 / GAME_SPEED))
+    cloud_x = int(t_current / (60.0 / GAME_SPEED))
+    ground_x = int(t_current / (30.0 / GAME_SPEED))
 
     birb.update()
 
     level_offset = int(current_x / SLICE_WIDTH)
 
-    display.set_scroll_group_offset(1, current_x % 20, 0, GAME_WIDTH)
-    display.set_scroll_group_offset(3, cloud_x % GAME_WIDTH, 0)
+    display.set_scroll_group_offset(1, current_x % 20, 0, wrap_x=20, wrap_x_to=0, wrap_y=0)
+    display.set_scroll_group_offset(3, cloud_top_x % WIDTH, 0, wrap_x=GAME_WIDTH, wrap_x_to=0, wrap_y=0)
+    display.set_scroll_group_offset(4, cloud_x % WIDTH, 0, wrap_x=GAME_WIDTH, wrap_x_to=0, wrap_y=0)
+    display.set_scroll_group_offset(5, ground_x % WIDTH, 0, wrap_x=GAME_WIDTH, wrap_x_to=0, wrap_y=0)
 
     spritelist.clear()
 
     hq_yoffset = GAME_BOTTOM - CLOUD_HEIGHT + 30
-    hq_xoffset = WIDTH - (cloud_x % WIDTH) - 256
+    hq_xoffset = (WIDTH * 2) - (ground_x % (WIDTH * 2)) - 256
 
     for hq, spr in enumerate(HQ):
         if hq_xoffset < GAME_WIDTH and hq_xoffset > -(hq * 32) - 32:
             spritelist.add(spr, hq_xoffset + (hq * 32), hq_yoffset)
 
-    for pipe in range(0, int(SLICES / 2) + 1):
+    for pipe in range(0, SLICES + 1):
         try:
             gap = PIPE_GAPS[level_offset + pipe]
             gap_width = GAP_WIDTHS[level_offset + pipe]
