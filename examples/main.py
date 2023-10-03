@@ -3,9 +3,17 @@
 import gc
 import time
 import math
+import random
 from os import listdir
 from picovision import PicoVision, PEN_RGB555
 from pimoroni import Button
+
+WIDTH = 320
+HEIGHT = 240
+
+# Hires (Slow!)
+# WIDTH = 640
+# HEIGHT = 480
 
 
 def get_applications() -> list[dict[str, str]]:
@@ -47,15 +55,45 @@ def hint(display: PicoVision, hint_x: int, hint_y: int, t: float, text: str, fg:
         hint_x += display.measure_text(text[i], 1)
 
 
+class Toaster:
+    def __init__(self, frames, slot=0):
+        self.w = WIDTH
+        self.h = HEIGHT
+        self.frames = frames
+        self.slot = slot
+        self.vx = random.randint(0, 5) - 2.5
+        self.vy = random.randint(0, 5) - 2.5
+        self.x = random.randint(0, self.w - 32)
+        self.y = random.randint(0, self.h - 32)
+
+    def update(self):
+        self.x += self.vx
+        self.y += self.vy
+
+        if self.x < 0:
+            self.x = 0
+            self.vx *= -1
+        if self.x + 32 > self.w:
+            self.x = self.w - 32
+            self.vx *= -1
+        if self.y < 0:
+            self.y = 0
+            self.vy *= -1
+        if self.y + 32 > self.h:
+            self.y = self.h - 32
+            self.vy *= -1
+
+    def draw(self, display, t):
+        display.display_sprite(self.slot, self.frames[int(t * 16) % len(self.frames)], int(self.x), int(self.y))
+
+
 def menu() -> str:
     applications = get_applications()
-    display = PicoVision(PEN_RGB555, 320, 240)
+    display = PicoVision(PEN_RGB555, WIDTH, HEIGHT)
 
     button_up = display.is_button_a_pressed
     button_down = display.is_button_x_pressed
     button_select = Button(9, invert=True).read
-
-    WIDTH, HEIGHT = display.get_bounds()
 
     selected_item = 2
     scroll_position = 2
@@ -74,16 +112,37 @@ def menu() -> str:
     press_x_label = True
     press_a_label = False
     press_y_label = False
+    omg_toasters = False
     last_button = time.ticks_ms() / 1000.0
 
     for _ in range(2):
         display.set_scroll_group_for_lines(1, HEIGHT - 20, HEIGHT)
         display.set_scroll_group_offset(1, 0, 0, wrap_x=WIDTH)
+        try:
+            toaster_frames = display.load_animation(0, "toaster.png", (32, 32))
+            toaster_frames += list(reversed(toaster_frames[:-1]))
+        except OSError:
+            toaster_frames = None
         display.update()
+
+    toasters = [
+        Toaster(toaster_frames, 0),
+        Toaster(toaster_frames, 1),
+        Toaster(toaster_frames, 2),
+        Toaster(toaster_frames, 3),
+    ]
 
     while True:
         t = time.ticks_ms() / 1000.0
         display.set_scroll_group_offset(1, int(t * 20) % WIDTH, 0, wrap_x=WIDTH, wrap_x_to=0)
+
+        if omg_toasters:
+            for toaster in toasters:
+                toaster.update()
+                toaster.draw(display, t)
+        else:
+            for i in range(len(toasters)):
+                display.clear_sprite(i)
 
         display.set_font("bitmap8")
 
@@ -109,6 +168,9 @@ def menu() -> str:
 
         if t - last_button >= 2 and not press_x_label and not press_a_label:
             press_y_label = True
+
+        if t - last_button >= 10 and toaster_frames is not None:
+            omg_toasters = True
 
         if button_select():
             # Wait for the button to be released.
@@ -152,12 +214,14 @@ def menu() -> str:
             # draw the text, selected item brightest and with shadow
             if selected_item == list_index:
                 display.set_pen(shadow_pen)
+                display.set_depth(1)
                 display.text(application["title"] + cursor, text_x + 1, text_y + 1, -1, text_size)
 
             selected = selected_item == list_index
             text_pen = selected_pen if selected else unselected_pen
             display.set_pen(text_pen)
             display.text(application["title"] + (cursor if selected else ""), text_x, text_y, -1, text_size)
+            display.set_depth(0)
 
         display.set_clip(0, 0, WIDTH, HEIGHT)
 
