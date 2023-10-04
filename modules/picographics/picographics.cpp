@@ -1223,6 +1223,111 @@ mp_obj_t ModPicoGraphics_is_button_a_pressed(mp_obj_t self_in) {
     return self->display->is_button_a_pressed() ? mp_const_true : mp_const_false;
 }
 
+mp_obj_t ModPicoGraphics_get_gpu_io_value(mp_obj_t self_in, mp_obj_t pin) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    
+    int pin_num = mp_obj_get_int(pin);
+    if (pin_num >= 0 && pin_num < 8) {
+        // "High" IO number
+        bool value = (self->display->get_gpio_hi() & (1 << pin_num)) != 0;
+        return value ? mp_const_true : mp_const_false;
+    }
+    else if (pin_num >= 23 && pin_num < 30) {
+        // "Low" IO number
+        bool value = (self->display->get_gpio() & (1 << pin_num)) != 0;
+        return value ? mp_const_true : mp_const_false;
+    }
+
+    mp_raise_ValueError("get_gpu_io_value(): invalid pin number");
+    return mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_set_gpu_io_value(mp_obj_t self_in, mp_obj_t pin, mp_obj_t value) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    
+    int pin_num = mp_obj_get_int(pin);
+    if (pin_num >= 0 && pin_num < 8) {
+        // "High" IO number
+        bool on = mp_obj_is_true(value);
+        self->display->set_gpio_hi(pin_num, on);
+        return mp_const_none;
+    }
+    else if (pin_num == 29) {
+        uint8_t level;
+        if (mp_obj_is_bool(value)) level = mp_obj_is_true(value) ? 255 : 0;
+        else if (mp_obj_is_int(value)) level = mp_obj_get_int(value);
+        else if (mp_obj_is_float(value)) level = mp_obj_get_float(value) * 255;
+        else mp_raise_ValueError("set_gpu_io_value(): invalid value type");
+        self->display->set_gpio_29_value(level);
+        return mp_const_none;
+    }
+
+    mp_raise_ValueError("set_gpu_io_value(): invalid pin number");
+    return mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_set_gpu_io_output_enable(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    
+    int pin_num = mp_obj_get_int(pin);
+    bool output = mp_obj_is_true(enable);
+    if (pin_num >= 0 && pin_num < 8) {
+        // "High" IO number
+        self->display->set_gpio_hi_dir(pin_num, output);
+        return mp_const_none;
+    }
+    else if (pin_num == 29) {
+        self->display->set_gpio_29_dir(output);
+        return mp_const_none;
+    }
+
+    mp_raise_ValueError("set_gpu_io_output_enable(): invalid pin number");
+    return mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_set_gpu_io_pull_up(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    
+    int pin_num = mp_obj_get_int(pin);
+    bool on = mp_obj_is_true(enable);
+    if (pin_num >= 0 && pin_num < 8) {
+        // "High" IO number
+        self->display->set_gpio_hi_pull_up(pin_num, on);
+        return mp_const_none;
+    }
+    else if (pin_num == 29) {
+        self->display->set_gpio_29_pull_up(on);
+        return mp_const_none;
+    }
+
+    mp_raise_ValueError("set_gpu_io_pull_up(): invalid pin number");
+    return mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_set_gpu_io_pull_down(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    
+    int pin_num = mp_obj_get_int(pin);
+    bool on = mp_obj_is_true(enable);
+    if (pin_num >= 0 && pin_num < 8) {
+        // "High" IO number
+        self->display->set_gpio_hi_pull_down(pin_num, on);
+        return mp_const_none;
+    }
+    else if (pin_num == 29) {
+        self->display->set_gpio_29_pull_down(on);
+        return mp_const_none;
+    }
+
+    mp_raise_ValueError("set_gpu_io_pull_down(): invalid pin number");
+    return mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_get_gpu_temp(mp_obj_t self_in) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    return mp_obj_new_float(self->display->get_gpu_temp());
+}
+
 mp_obj_t ModPicoGraphics_get_i2c(mp_obj_t self_in) {
     _PimoroniI2C_obj_t* i2c_obj = m_new_obj(_PimoroniI2C_obj_t);
     i2c_obj->base.type = &PimoroniI2C_type;

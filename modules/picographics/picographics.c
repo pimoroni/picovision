@@ -62,6 +62,14 @@ MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics__del__obj, ModPicoGraphics__del__);
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_is_button_x_pressed_obj, ModPicoGraphics_is_button_x_pressed);
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_is_button_a_pressed_obj, ModPicoGraphics_is_button_a_pressed);
 
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_get_gpu_io_value_obj, ModPicoGraphics_get_gpu_io_value);
+MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_value_obj, ModPicoGraphics_set_gpu_io_value);
+MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_output_enable_obj, ModPicoGraphics_set_gpu_io_output_enable);
+MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_pull_up_obj, ModPicoGraphics_set_gpu_io_pull_up);
+MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_pull_down_obj, ModPicoGraphics_set_gpu_io_pull_down);
+
+MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_get_gpu_temp_obj, ModPicoGraphics_get_gpu_temp);
+
 // Loop
 MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_loop_obj, ModPicoGraphics_loop);
 
@@ -116,6 +124,14 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_is_button_x_pressed), MP_ROM_PTR(&ModPicoGraphics_is_button_x_pressed_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_button_a_pressed), MP_ROM_PTR(&ModPicoGraphics_is_button_a_pressed_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_get_gpu_io_value), MP_ROM_PTR(&ModPicoGraphics_get_gpu_io_value_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_gpu_io_value), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_value_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_gpu_io_output_enable), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_output_enable_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_gpu_io_pull_up), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_pull_up_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_gpu_io_pull_down), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_pull_down_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_get_gpu_temp), MP_ROM_PTR(&ModPicoGraphics_get_gpu_temp_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_loop), MP_ROM_PTR(&ModPicoGraphics_loop_obj) },
 

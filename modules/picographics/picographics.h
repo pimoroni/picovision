@@ -94,5 +94,13 @@ extern mp_obj_t ModPicoGraphics__del__(mp_obj_t self_in);
 extern mp_obj_t ModPicoGraphics_is_button_x_pressed(mp_obj_t self_in);
 extern mp_obj_t ModPicoGraphics_is_button_a_pressed(mp_obj_t self_in);
 
+extern mp_obj_t ModPicoGraphics_get_gpu_io_value(mp_obj_t self_in, mp_obj_t pin);
+extern mp_obj_t ModPicoGraphics_set_gpu_io_value(mp_obj_t self_in, mp_obj_t pin, mp_obj_t value);
+extern mp_obj_t ModPicoGraphics_set_gpu_io_output_enable(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable);
+extern mp_obj_t ModPicoGraphics_set_gpu_io_pull_up(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable);
+extern mp_obj_t ModPicoGraphics_set_gpu_io_pull_down(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable);
+
+extern mp_obj_t ModPicoGraphics_get_gpu_temp(mp_obj_t self_in);
+
 // Loop
 extern mp_obj_t ModPicoGraphics_loop(mp_obj_t self_in, mp_obj_t update, mp_obj_t render);

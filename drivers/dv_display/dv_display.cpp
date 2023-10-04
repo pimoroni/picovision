@@ -281,6 +281,46 @@ namespace pimoroni {
     return i2c->reg_read_uint8(I2C_ADDR, I2C_REG_GPIO);
   }
 
+  void DVDisplay::set_gpio_29_dir(bool output) {
+    uint8_t pin29_mode = i2c->reg_read_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE);
+    if (output) {
+      pin29_mode = 5;
+    }
+    else if (pin29_mode > 3) {
+      // Pin is not an input, set to input with no pulls
+      pin29_mode = 0;
+    }
+    else {
+      // Pin is already an input, don't change the pulls
+      return;
+    }
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE, pin29_mode);
+  }
+
+  void DVDisplay::set_gpio_29_value(uint8_t pwm_value) {
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_GPIO29_OUT, pwm_value);
+  }
+
+  void DVDisplay::set_gpio_29_pull_up(bool on) {
+    uint8_t pin29_mode = i2c->reg_read_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE);
+    if (pin29_mode > 3) {
+      return;
+    }
+    if (on) pin29_mode |= 1;
+    else pin29_mode &= ~1;
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE, pin29_mode);
+  }
+
+  void DVDisplay::set_gpio_29_pull_down(bool on) {
+    uint8_t pin29_mode = i2c->reg_read_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE);
+    if (pin29_mode > 3) {
+      return;
+    }
+    if (on) pin29_mode |= 2;
+    else pin29_mode &= ~2;
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE, pin29_mode);
+  }
+
   uint8_t DVDisplay::get_gpio_hi() {
     return i2c->reg_read_uint8(I2C_ADDR, I2C_REG_GPIO_HI);
   }
