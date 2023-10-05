@@ -237,7 +237,13 @@ namespace pimoroni {
 
       uint8_t get_gpio();
       void set_gpio_29_dir(bool output);
+
+      // Set the proportion of the PWM cycle that pin 29 is on for, this is linear in the range 0-255.
       void set_gpio_29_value(uint8_t pwm_value);
+      void set_gpio_29(bool on) { on ? set_gpio_29_value(255) : set_gpio_29_value(0); }
+
+      // Pin 29 must be set as an input before setting pull up or down.
+      // The pull configuration is lost if the pin mode is changed.
       void set_gpio_29_pull_up(bool on);
       void set_gpio_29_pull_down(bool on);
 

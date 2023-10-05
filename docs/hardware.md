@@ -14,6 +14,7 @@ The two PSRAMs act as a front and back buffer. While the "CPU" (the Pico W) writ
     - [Sprite blending](#sprite-blending)
     - [PicoVision Sprite .pvs Format](#picovision-sprite-pvs-format)
   - [Scanlines](#scanlines)
+- [GPU GPIO](#gpu-gpio)
 
 ## GPU Features
 
@@ -146,3 +147,13 @@ During VSync, data is loaded into the active sprite buffer in GPU RAM (that's th
 Additionally a series of sprite patch buffers - there are ten per scanline - are configured, pointing to the relevant sprite data for each scanline.
 
 When the scanline is being written out to the screen, the patches from the sprite patch buffers are blended into the line immediately before it is encoded into HDMI symbols for the display.
+
+## GPU GPIO
+
+As well as display driving functionality, the GPU RP2040 acts as an I2C GPIO expander, providing access to 9 GPIO pins on the header and the A and X buttons.
+
+The buttons and pin 29 are on regular RP2040 GPIOs.  The remaining GPIOs use pins on the RP2040 that are normally assigned to the flash and USB, but are also usable as GPIOs when not performing those duties, as is the case for the GPU.
+
+The "high" GPIOs are accessed using pin numbers 0-7 through the `get/set_gpio_hi` family of functions on the C++ DVDisplay class.  For MicroPython these pins and pin 29 are all accessed through the common `get/set_gpu_io` family of functions, using pin numbers 0-7 and 29.
+
+Separate `is_button_x_pressed` and `is_button_a_pressed` functions allow you to check the button state.
