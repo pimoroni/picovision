@@ -135,7 +135,6 @@ def draw_level():
 
     # Everything but the fire
     display.set_scroll_group_for_lines(1, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
-    #display.set_scroll_group_for_lines(2, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
 
     # For scrolling the fire
     display.set_scroll_group_for_lines(3, DISPLAY_HEIGHT - pvgame.TILE_H, DISPLAY_HEIGHT)

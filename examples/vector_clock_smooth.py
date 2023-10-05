@@ -86,7 +86,7 @@ t_frames = 0
 t_total = 0
 last_second = None
 
-last_clip = [(0,0,0,0), (0,0,0,0)]
+last_clip = [(0, 0, 0, 0), (0, 0, 0, 0)]
 
 while True:
     year, month, day, hour, minute, second, _, _ = time.localtime()
@@ -131,7 +131,7 @@ while True:
 
     # Remember this clipping window for 2 frames time
     last_clip.append((clip_x, clip_y, clip_max_x, clip_max_y),)
-    
+
     # Expand to also cover the clipping window from 2 frames ago
     clip_x = min(clip_x, last_clip[0][0])
     clip_y = min(clip_y, last_clip[0][1])
@@ -140,7 +140,7 @@ while True:
 
     # Apply the clipping region so we only redraw the parts of the clock which have changed
     display.set_clip(clip_x, clip_y, clip_max_x - clip_x + 1, clip_max_y - clip_y + 1)
-    
+
     # Drop the clipping window from 2 frames ago, we no longer need it
     last_clip = last_clip[1:]
 
