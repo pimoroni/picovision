@@ -44,18 +44,18 @@ SPRITE_PIPE_HEIGHT = 10
 
 for _ in range(2):
     # Pipes and goals
-    display.load_sprite("pipe.png", SPRITE_PIPE, (0, 0, 20, SPRITE_PIPE_HEIGHT))
-    display.load_sprite("pipe-cap.png", SPRITE_PIPE_CAP)
-    display.load_sprite("goal.png", SPRITE_GOAL)
+    display.load_sprite("/floppy_birb/pipe.png", SPRITE_PIPE, (0, 0, 20, SPRITE_PIPE_HEIGHT))
+    display.load_sprite("/floppy_birb/pipe-cap.png", SPRITE_PIPE_CAP)
+    display.load_sprite("/floppy_birb/goal.png", SPRITE_GOAL)
     # The individual frames of the birb
-    display.load_animation(SPRITE_BIRB_1, "birb-sprite.png", (32, 32), source=(0, 0, 128, 32))
+    display.load_animation(SPRITE_BIRB_1, "/floppy_birb/birb-sprite.png", (32, 32), source=(0, 0, 128, 32))
     # The HQ building, needs four sprites to assemble
-    display.load_animation(HQ_1, "pimoroni-hq.png", (32, 17))
+    display.load_animation(HQ_1, "/floppy_birb/pimoroni-hq.png", (32, 17))
     display.update()
 
 vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_X16)
-vector.set_font("OpenSans-Regular.af", 50)
+vector.set_font("/floppy_birb/OpenSans-Regular.af", 50)
 
 
 # SKY = display.create_pen(0x74, 0xc6, 0xd4)
@@ -192,13 +192,13 @@ def prep_game():
         display.set_pen(SKY)
         display.rectangle(0, GAME_TOP, WIDTH, GAME_HEIGHT - CLOUD_HEIGHT)
 
-        png.open_file("sky.png")
+        png.open_file("/floppy_birb/sky.png")
         png.decode(0, GAME_TOP)
 
         display.set_pen(GRASS)
         display.rectangle(0, GAME_BOTTOM - CLOUD_HEIGHT, WIDTH, CLOUD_HEIGHT)
 
-        png.open_file("ground.png")
+        png.open_file("/floppy_birb/ground.png")
         png.decode(0, GAME_BOTTOM - CLOUD_HEIGHT)
 
         display.set_clip(0, 0, WIDTH, HEIGHT)

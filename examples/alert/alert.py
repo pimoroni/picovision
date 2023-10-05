@@ -26,7 +26,7 @@ VOLUME = 0.5
 graphics = VGA()
 
 vector = PicoVector(graphics)
-vector.set_font("future-earth.af", 120)
+vector.set_font("/alert/future-earth.af", 120)
 
 WHITE = graphics.create_pen(255, 255, 255)
 BLACK = graphics.create_pen(0, 0, 0)

@@ -4,7 +4,7 @@ import gc
 import time
 import math
 import random
-from os import listdir, chdir
+from os import listdir, chdir, stat
 from picovision import PicoVision, PEN_RGB555
 from pimoroni import Button
 
@@ -16,17 +16,12 @@ HEIGHT = 240
 # HEIGHT = 480
 
 
-def get_applications(dir="/", applications=None) -> list[dict[str, str]]:
+def get_applications() -> list[dict[str, str, str]]:
     # fetch a list of the applications that are stored in the filesystem
-    if applications is None:
-        applications = []
-    try:
-        files = listdir(dir)
-    except OSError:
-        return
+    applications = []
 
-    for file in files:
-        if file.endswith(".py") and file not in ("main.py", "pvgame.py", "secrets.py"):
+    for file in listdir():
+        if file.endswith(".py") and file not in ("main.py", "secrets.py"):
             # print(f"App: {file}")
             # convert the filename from "something_or_other.py" to "Something Or Other"
             # via weird incantations and a sprinkling of voodoo
@@ -35,13 +30,26 @@ def get_applications(dir="/", applications=None) -> list[dict[str, str]]:
             applications.append(
                 {
                     "file": file,
-                    "dir": dir,
+                    "dir": "/",
                     "title": title
                 }
             )
-        else:  # Hack to limit recursion depth to 1
-            # print(f"Subdir?: {file}")
-            get_applications(f"{dir}{file}/", applications)
+        else:
+            try:
+                stat(f"{file}/{file}.py")
+                # convert the filename from "something_or_other.py" to "Something Or Other"
+                # via weird incantations and a sprinkling of voodoo
+                title = " ".join([v[:1].upper() + v[1:] for v in file.split("_")])
+
+                applications.append(
+                    {
+                        "file": f"{file}",
+                        "dir": file,
+                        "title": title
+                    }
+                )
+            except OSError:
+                pass
 
     # sort the application list alphabetically by title and return the list
     return sorted(applications, key=lambda x: x["title"])
