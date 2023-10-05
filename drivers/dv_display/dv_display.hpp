@@ -70,6 +70,8 @@ namespace pimoroni {
     static constexpr uint I2C_REG_STOP = 0xFF;
     static constexpr uint I2C_REG_GPIO = 0xC0;
     static constexpr uint I2C_REG_LED = 0xC1;
+    static constexpr uint I2C_REG_GPIO29_MODE = 0xC2;
+    static constexpr uint I2C_REG_GPIO29_OUT = 0xC3;
     static constexpr uint I2C_REG_GPIO_HI = 0xC8;
     static constexpr uint I2C_REG_GPIO_HI_OUT = 0xC9;
     static constexpr uint I2C_REG_GPIO_HI_OE = 0xCA;
@@ -234,6 +236,10 @@ namespace pimoroni {
       void set_scroll_idx_for_lines(int idx, int miny, int maxy);
 
       uint8_t get_gpio();
+      void set_gpio_29_dir(bool output);
+      void set_gpio_29_value(uint8_t pwm_value);
+      void set_gpio_29_pull_up(bool on);
+      void set_gpio_29_pull_down(bool on);
 
       // The "Hi" GPIO are marked: CK, CS, D0, D1, D2, D3, D+, D-
       uint8_t get_gpio_hi();
