@@ -8,6 +8,7 @@ t_start = time.ticks_ms()
 
 DISPLAY_WIDTH = 320
 DISPLAY_HEIGHT = 240
+SCROLL = True
 
 FRAME_SCALE_X = 2
 FRAME_SCALE_Y = 1
@@ -134,7 +135,7 @@ def draw_level():
 
     # Everything but the fire
     display.set_scroll_group_for_lines(1, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
-    display.set_scroll_group_for_lines(2, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
+    #display.set_scroll_group_for_lines(2, 0, DISPLAY_HEIGHT - pvgame.TILE_H)
 
     # For scrolling the fire
     display.set_scroll_group_for_lines(3, DISPLAY_HEIGHT - pvgame.TILE_H, DISPLAY_HEIGHT)
@@ -260,9 +261,16 @@ def white_screen():
 t_start = time.time()
 
 while True:
+    if SCROLL:
+        scroll_offset = player.x - int(DISPLAY_WIDTH / 2)
+    else:
+        scroll_offset = 0
+
+    display.set_scroll_group_offset(1, scroll_offset % DISPLAY_WIDTH, 0, wrap_x=DISPLAY_WIDTH)
+
     fire_x = int(time.ticks_ms() / 200) % FIRE_FRAMES
     fire_x *= SPRITE_W * FIRE_FRAMES
-    display.set_scroll_group_offset(3, fire_x, 0)
+    display.set_scroll_group_offset(3, (fire_x + scroll_offset) % DISPLAY_WIDTH, 0)
 
     t = int(time.ticks_ms() / 250)
 
@@ -282,11 +290,11 @@ while True:
     display.set_remote_palette(remote_palette)
 
     spritelist.clear()
-    player.draw(t, 0, 32)
-    snake_a.draw(t, 0, 32)
-    snake_b.draw(t, 0, 32)
-    snake_c.draw(t, 0, 32)
-    snake_d.draw(t, 0, 32)
+    player.draw(t, 0 - scroll_offset, 32)
+    snake_a.draw(t, 0 - scroll_offset, 32)
+    snake_b.draw(t, 0 - scroll_offset, 32)
+    snake_c.draw(t, 0 - scroll_offset, 32)
+    snake_d.draw(t, 0 - scroll_offset, 32)
     spritelist.display()
 
     time.sleep(1.0 / 60)
