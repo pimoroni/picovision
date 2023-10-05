@@ -26,7 +26,7 @@ def get_applications(dir="/", applications=None) -> list[dict[str, str]]:
         return
 
     for file in files:
-        if file.endswith(".py") and file not in ("main.py", "pvgame.py"):
+        if file.endswith(".py") and file not in ("main.py", "pvgame.py", "secrets.py"):
             # print(f"App: {file}")
             # convert the filename from "something_or_other.py" to "Something Or Other"
             # via weird incantations and a sprinkling of voodoo
