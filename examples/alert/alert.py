@@ -26,6 +26,7 @@ VOLUME = 0.5
 graphics = VGA()
 
 vector = PicoVector(graphics)
+vector.set_font("future-earth.af", 120)
 
 WHITE = graphics.create_pen(255, 255, 255)
 BLACK = graphics.create_pen(0, 0, 0)
@@ -95,7 +96,7 @@ def full_refresh():
         # draw a border, with vectors
         vector.draw(OUTER_RECTANGLE, INNER_RECTANGLE)
         graphics.set_pen(BLACK)
-        vector.set_font("/future-earth.af", 30)
+        vector.set_font_size(30)
         vector.text("ALERT STATUS", 50, -15)
         draw_starfield()
         graphics.update()
@@ -163,7 +164,7 @@ while True:
     graphics.rectangle(0, HEIGHT - 100, WIDTH, 100)
 
     # draw the text
-    vector.set_font("/future-earth.af", 120)
+    vector.set_font_size(120)
     # static
     if current_mode == "NOT ALERT":
         graphics.set_pen(WHITE)

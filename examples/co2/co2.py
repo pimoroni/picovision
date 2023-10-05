@@ -7,12 +7,11 @@ You will need the OpenSans-Bold.af font saved to your PicoVision alongside this 
 """
 
 from picovision import PicoVision, PEN_RGB555
-from pimoroni import PICOVISION_I2C_PINS
 from pimoroni_i2c import PimoroniI2C
 import breakout_scd41
 from picovector import Polygon, PicoVector, ANTIALIAS_X16
 
-i2c = PimoroniI2C(**PICOVISION_I2C_PINS)
+i2c = PimoroniI2C(sda=6, scl=7)
 breakout_scd41.init(i2c)
 breakout_scd41.start()
 
@@ -92,7 +91,7 @@ humidity_readings = []
 
 # set up
 vector.set_antialiasing(ANTIALIAS_X16)
-vector.set_font("/OpenSans-Bold.af", 80)
+vector.set_font("OpenSans-Bold.af", 80)
 display.set_pen(WHITE)
 vector.text("Waiting for sensor to be ready", 0, 0)
 display.update()
@@ -153,11 +152,11 @@ while True:
         co2_graph = graph_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, co2_readings)
         vector.draw(co2_graph)
         # draw the CO2 text
-        vector.set_font("/OpenSans-Bold.af", 80)
+        vector.set_font_size(80)
         vector.text("CO2", PADDING, -30)
         vector.text(f"{co2:.0f}ppm", WIDTH // 2, -30)
         display.set_pen(BLACK)
-        vector.set_font("/OpenSans-Bold.af", 30)
+        vector.set_font_size(30)
         vector.text(f"Low {lowest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 40)
         vector.text(f"High {highest_co2:.0f}ppm", WIDTH // 2, round(TEMPERATURE_GRAPH_TOP) - 40)
 
