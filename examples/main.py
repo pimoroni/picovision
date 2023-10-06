@@ -4,7 +4,7 @@ import gc
 import time
 import math
 import random
-from os import listdir, chdir, stat
+from os import listdir, stat
 from picovision import PicoVision, PEN_RGB555
 from pimoroni import Button
 
@@ -30,7 +30,6 @@ def get_applications() -> list[dict[str, str, str]]:
             applications.append(
                 {
                     "file": file,
-                    "dir": "/",
                     "title": title
                 }
             )
@@ -43,8 +42,7 @@ def get_applications() -> list[dict[str, str, str]]:
 
                 applications.append(
                     {
-                        "file": f"{file}",
-                        "dir": file,
+                        "file": f"{file}.{file}",
                         "title": title
                     }
                 )
@@ -58,8 +56,6 @@ def get_applications() -> list[dict[str, str, str]]:
 def prepare_for_launch() -> None:
     for k in locals().keys():
         if k not in ("__name__",
-                     "chdir",
-                     "application_dir",
                      "application_file_to_launch",
                      "gc"):
             del locals()[k]
@@ -198,7 +194,7 @@ def menu() -> str:
             while button_select():
                 time.sleep(0.01)
 
-            return applications[selected_item]["dir"], applications[selected_item]["file"]
+            return applications[selected_item]["file"]
 
         scroll_position += (target_scroll_position - scroll_position) / 5
 
@@ -264,11 +260,10 @@ def menu() -> str:
 
 # The application we will be launching. This should be ouronly global, so we can
 # drop everything else.
-application_dir, application_file_to_launch = menu()
+application_file_to_launch = menu()
 
 # Run whatever we've set up to.
 # If this fails, we'll exit the script and drop to the REPL, which is
 # fairly reasonable.
 prepare_for_launch()
-chdir(application_dir)
 __import__(application_file_to_launch)
