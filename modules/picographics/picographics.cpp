@@ -1323,6 +1323,33 @@ mp_obj_t ModPicoGraphics_set_gpu_io_pull_down(mp_obj_t self_in, mp_obj_t pin, mp
     return mp_const_false;
 }
 
+mp_obj_t ModPicoGraphics_set_gpu_io_adc_enable(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    
+    int pin_num = mp_obj_get_int(pin);
+    bool on = mp_obj_is_true(enable);
+    if (pin_num == 29) {
+        if (on) self->display->enable_gpio_29_adc();
+        else self->display->set_gpio_29_dir(false);
+        return mp_const_none;
+    }
+
+    mp_raise_ValueError("set_gpu_io_adc_enable(): invalid pin number");
+    return mp_const_false;
+}
+
+mp_obj_t ModPicoGraphics_get_gpu_io_adc_voltage(mp_obj_t self_in, mp_obj_t pin) {
+    ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
+    
+    int pin_num = mp_obj_get_int(pin);
+    if (pin_num == 29) {
+        return mp_obj_new_float(self->display->get_gpio_29_adc());
+    }
+
+    mp_raise_ValueError("get_gpu_io_adc_voltage(): invalid pin number");
+    return mp_const_none;
+}
+
 mp_obj_t ModPicoGraphics_get_gpu_temp(mp_obj_t self_in) {
     ModPicoGraphics_obj_t *self = MP_OBJ_TO_PTR2(self_in, ModPicoGraphics_obj_t);
     return mp_obj_new_float(self->display->get_gpu_temp());

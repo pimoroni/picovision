@@ -72,12 +72,13 @@ namespace pimoroni {
     static constexpr uint I2C_REG_LED = 0xC1;
     static constexpr uint I2C_REG_GPIO29_MODE = 0xC2;
     static constexpr uint I2C_REG_GPIO29_OUT = 0xC3;
+    static constexpr uint I2C_REG_GPIO29_ADC = 0xC4;
+    static constexpr uint I2C_REG_GPU_TEMP = 0xC6;
     static constexpr uint I2C_REG_GPIO_HI = 0xC8;
     static constexpr uint I2C_REG_GPIO_HI_OUT = 0xC9;
     static constexpr uint I2C_REG_GPIO_HI_OE = 0xCA;
     static constexpr uint I2C_REG_GPIO_HI_PULL_UP = 0xCB;
     static constexpr uint I2C_REG_GPIO_HI_PULL_DOWN = 0xCC;
-    static constexpr uint I2C_REG_GPU_TEMP = 0xC6;
     static constexpr uint I2C_REG_EDID = 0xFB;
     static constexpr uint I2C_REG_PALETTE_INDEX = 0xF8;
     static constexpr uint I2C_REG_SCROLL_BASE = 0xE0;
@@ -249,6 +250,11 @@ namespace pimoroni {
       // The pull configuration is lost if the pin mode is changed.
       void set_gpio_29_pull_up(bool on);
       void set_gpio_29_pull_down(bool on);
+
+      // ADC on pin 29.  Enabling the ADC disables input and output
+      // Setting the direction on pin 29 disables the ADC.
+      void enable_gpio_29_adc();
+      float get_gpio_29_adc();  // in V
 
       // The "Hi" GPIO are marked: CK, CS, D0, D1, D2, D3, D+, D-
       // Returns the state of the Hi GPIOs as a bitfield.

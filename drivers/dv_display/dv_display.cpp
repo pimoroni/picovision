@@ -321,6 +321,15 @@ namespace pimoroni {
     i2c->reg_write_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE, pin29_mode);
   }
 
+  void DVDisplay::enable_gpio_29_adc() {
+    i2c->reg_write_uint8(I2C_ADDR, I2C_REG_GPIO29_MODE, 6);
+  }
+
+  float DVDisplay::get_gpio_29_adc() {
+    constexpr float conversion = 3.3f / (1 << 12);
+    return i2c->reg_read_uint16(I2C_ADDR, I2C_REG_GPIO29_ADC) * conversion;
+  }
+
   uint8_t DVDisplay::get_gpio_hi() {
     return i2c->reg_read_uint8(I2C_ADDR, I2C_REG_GPIO_HI);
   }

@@ -238,3 +238,11 @@ GPIO 29 can be used as a PWM, if you enable it as an output and set a float valu
 display.set_gpu_io_output_enable(29, True)  # Enable output on GPU GPIO 29
 display.set_gpu_io_value(29, 0.25)          # Set GPU GPIO 29 on 25% of the time
 ```
+
+GPIO 29 can also be used as an ADC, to read a voltage between 0 and 3.3V.  There will be a short delay (around 1.5ms) between the ADC being enabled and the first reading being available.
+```python
+display.set_gpu_io_adc_enable(29, True)
+time.sleep(0.002)
+voltage = display.get_gpu_io_adc_voltage(29)
+print(f"The voltage on pin 29 is {voltage:.02f}V")
+```
