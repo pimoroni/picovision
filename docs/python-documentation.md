@@ -13,6 +13,7 @@
 - [Advanced Features](#advanced-features)
   - [Scanlines](#scanlines)
   - [Frame vs Display](#frame-vs-display)
+- [GPIO](#gpio)
 
 ## Getting Started
 
@@ -196,11 +197,44 @@ DISPLAY_HEIGHT = 240
 FRAME_WIDTH = DISPLAY_WIDTH * 3
 FRAME_HEIGHT = 240
 
-display = PicoGraphics(pen_type=PEN,
-                       width=DISPLAY_WIDTH,
-                       height=DISPLAY_HEIGHT,
-                       frame_width=FRAME_WIDTH,
-                       frame_height=FRAME_HEIGHT)
+display = PicoVision(pen_type=PEN,
+                     width=DISPLAY_WIDTH,
+                     height=DISPLAY_HEIGHT,
+                     frame_width=FRAME_WIDTH,
+                     frame_height=FRAME_HEIGHT)
 ```
 
 With a larger canvas you can draw offscreen and use scroll offsets to bring those regions into view.
+
+## GPIO
+
+The Y button is connected to GPIO 9 on the Pico W and can be used in the normal way, it should be pulled up and is low when pressed:
+```python
+button_y = machine.Pin(9, machine.Pin.IN, machine.Pin.PULL_UP)
+if button_y.value() == 0:
+    print("Y is pressed")
+```
+
+The A and X buttons are connected to the GPU and can be read with functions on the PicoVision display class:
+
+```python
+if display.is_button_x_pressed():
+    print("X is pressed")
+if display.is_button_a_pressed():
+    print("A is pressed")
+```
+
+The GPU GPIOs on the header are also accessed through the display class:
+```python
+display.get_gpu_io_value(0)                # Get the value of GPU GPIO 0 (CK)
+display.set_gpu_io_output_enable(1, True)  # Enable output on GPU GPIO 1 (CS)
+display.set_gpu_io_value(1, True)          # Set GPU GPIO 1 (CS) high
+display.set_gpu_io_pull_up(2, True)        # Enable pull up on GPU GPIO 2 (D0)
+display.set_gpu_io_pull_down(3, True)      # Enable pull down on GPU GPIO 3 (D1)
+```
+
+GPIO 29 can be used as a PWM, if you enable it as an output and set a float value between 0 and 1 it will be set to that duty cycle:
+```python
+display.set_gpu_io_output_enable(29, True)  # Enable output on GPU GPIO 29
+display.set_gpu_io_value(29, 0.25)          # Set GPU GPIO 29 on 25% of the time
+```

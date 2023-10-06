@@ -235,14 +235,25 @@ namespace pimoroni {
       // this applies to the current bank only - you need to set again after flipping to apply the same setting to the other bank.
       void set_scroll_idx_for_lines(int idx, int miny, int maxy);
 
+      // Returns the state of GPU GPIOs 23-29 as a bitfield.
       uint8_t get_gpio();
+
+      bool get_gpio_29() { return (get_gpio() & 0x40) == 0x40; }
       void set_gpio_29_dir(bool output);
+
+      // Set the proportion of the PWM cycle that pin 29 is on for, this is linear in the range 0-255.
       void set_gpio_29_value(uint8_t pwm_value);
+      void set_gpio_29(bool on) { on ? set_gpio_29_value(255) : set_gpio_29_value(0); }
+
+      // Pin 29 must be set as an input before setting pull up or down.
+      // The pull configuration is lost if the pin mode is changed.
       void set_gpio_29_pull_up(bool on);
       void set_gpio_29_pull_down(bool on);
 
       // The "Hi" GPIO are marked: CK, CS, D0, D1, D2, D3, D+, D-
+      // Returns the state of the Hi GPIOs as a bitfield.
       uint8_t get_gpio_hi();
+      bool get_gpio_hi(uint8_t pin) { return (get_gpio_hi() & (1 << pin)) != 0; }
       void set_gpio_hi_dir(uint pin, bool output);
       void set_gpio_hi_dir_all(uint8_t output_enables);
       void set_gpio_hi(uint pin, bool on);
