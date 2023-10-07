@@ -28,6 +28,9 @@ hue = 0.0
 vector.set_antialiasing(ANTIALIAS_X16)
 
 while True:
+    # reset the hue
+    hue = 0.0
+
     # clear to black
     display.set_pen(BLACK)
     display.clear()
