@@ -71,3 +71,15 @@ while True:
         hue += 1.0 / 30
     display.update()
     time.sleep(5)
+
+    display.set_pen(BLACK)
+    display.clear()
+    vector.set_font("basic/coolvetica_rg.af", 100)
+    # draw the text many times
+    for i in range(50):
+        PEN_COLOUR = display.create_pen_hsv(hue, 1.0, 1.0)
+        display.set_pen(PEN_COLOUR)
+        vector.text("Hello PicoVision!", 10, (i * 8) - 30)
+        hue += 1.0 / 25
+    display.update()
+    time.sleep(5)
