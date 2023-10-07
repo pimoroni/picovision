@@ -286,6 +286,7 @@ namespace pimoroni {
 
     protected:
       uint8_t palette[NUM_PALETTES * PALETTE_SIZE * 3] alignas(4);
+      uint8_t change_mode = 0;
       uint8_t rewrite_header = 0;
       uint8_t rewrite_palette = 0;
       uint8_t current_palette = 0;

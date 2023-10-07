@@ -189,6 +189,10 @@ namespace pimoroni {
     ram.wait_for_finish_blocking();
 
     enable_switch_on_vsync = true;
+
+    if (change_mode) {
+      wait_for_flip();
+    }
   }
 
   void DVDisplay::flip() {
@@ -200,6 +204,12 @@ namespace pimoroni {
     while (enable_switch_on_vsync) {
       // Waiting for IRQ handler to do flip.
       my_thread_yield();
+    }
+
+    if (change_mode) {
+      --change_mode;
+      write_sprite_table();
+      set_scroll_idx_for_lines(0, 0, display_height);
     }
   }
 
@@ -531,8 +541,18 @@ namespace pimoroni {
 
   void DVDisplay::set_mode(Mode new_mode)
   {
+    if (new_mode == MODE_RGB888 && h_repeat == 1) {
+      // Don't allow mode switch to non pixel doubled RGB888
+      return;
+    }
+
     mode = new_mode;
-    rewrite_header = 2;
+    set_scroll_idx_for_lines(0, 0, display_height);
+    write_sprite_table();
+    for (int i = 0; i < MAX_DISPLAYED_SPRITES; ++i) {
+      clear_sprite(i);
+    }
+    change_mode = 1;
     if (mode == MODE_PALETTE) {
       rewrite_palette = 2;
     }
