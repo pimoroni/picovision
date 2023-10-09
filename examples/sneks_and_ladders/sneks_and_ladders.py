@@ -112,7 +112,7 @@ def draw_level():
     global SNEK_AL, SNEK_AR, SNEK_BL, SNEK_BR, AAAAHL, AAAAHR
 
     # Load the animation sheet into RAM, we're skipping the first 64 pixels because that's our tilesheet
-    animations = pvgame.cached_png(display, "tiles.png", source=(0, 64, 96, 80))
+    animations = pvgame.cached_png(display, "/sneks_and_ladders/tiles.png", source=(0, 64, 96, 80))
 
     animation_data_slot = 0
 
@@ -151,7 +151,7 @@ def draw_level():
     fire_tilemap_bytes = bytes([n + 1 for n in fire_tilemap])
 
     # Load our 64x64, 16 tile sheet
-    tiles = pvgame.cached_png(display, "tiles.png", source=(0, 0, 64, 64))
+    tiles = pvgame.cached_png(display, "/sneks_and_ladders/tiles.png", source=(0, 0, 64, 64))
 
     # Clear to background colour
     display.set_pen(BG)

@@ -6,7 +6,7 @@ from machine import Pin
 
 """
 Pimoroni logo bouncing around on the screen
-Please upload the pim-logo.png to the pico 
+Please upload the pim-logo.png to the pico
 Multiple logos (maximum of 4) can be added to the screen
 Press Y to add logo images to the screen
 """
@@ -39,7 +39,7 @@ try:
     # Given that the png image is 64 by 64 pixels it is split to 4 portions of 32 by 32 pixels
     # This is done by providing a 2 tuple as third argument as (portion_width, portion_height)
     for _ in range(2):
-        LOGOSUB = display.load_animation(0, "pim-logo.png", (SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
+        LOGOSUB = display.load_animation(0, "/bouncing_logo/pim-logo.png", (SUB_IMAGE_SIZE, SUB_IMAGE_SIZE))
         display.update()
 
     has_sprite = True
@@ -137,35 +137,31 @@ offset = DEFAULT_VELOCITY
 
 def object_collision(j):
     """Checks if a given logo collides with other logos on the screen"""
-    for i in range(j+1, len(logos)): # compares the logo with succeeding logos in the list
+    for i in range(j + 1, len(logos)):  # compares the logo with succeeding logos in the list
 
         # right collision
-        if abs(logos[i].x_start - logos[j].x_end) < offset \
-            and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT:
+        if abs(logos[i].x_start - logos[j].x_end) < offset and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT:
             if logos[i].x_vel < 0:
                 logos[i].x_vel *= -1
             if logos[j].x_vel > 0:
                 logos[j].x_vel *= -1
 
         # left collision
-        elif abs(logos[j].x_start - logos[i].x_end) < offset \
-            and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT:
+        elif abs(logos[j].x_start - logos[i].x_end) < offset and abs(logos[i].y_start - logos[j].y_start) <= IMAGE_HEIGHT:
             if logos[i].x_vel > 0:
                 logos[i].x_vel *= -1
             if logos[j].x_vel < 0:
                 logos[j].x_vel *= -1
 
         # up collision
-        elif abs(logos[i].y_start - logos[j].y_end) < offset \
-            and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH:
+        elif abs(logos[i].y_start - logos[j].y_end) < offset and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH:
             if logos[i].y_vel < 0:
                 logos[i].y_vel *= -1
             if logos[j].y_vel > 0:
                 logos[j].y_vel *= -1
 
         # down collision
-        elif abs(logos[j].y_start - logos[i].y_end) < offset \
-            and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH:
+        elif abs(logos[j].y_start - logos[i].y_end) < offset and abs(logos[i].x_start - logos[j].x_start) <= IMAGE_WIDTH:
             if logos[i].y_vel > 0:
                 logos[i].y_vel *= -1
             if logos[j].y_vel < 0:
@@ -205,12 +201,10 @@ while True:
     if current_time - last_time > 500:
         if not y_btn.value():
             add_logo()
-            
+
         last_time = current_time
 
     draw_background()
-    
-    
 
     # display name with offset
     text_width = display.measure_text(NAME, scale=TEXT_SCALE)
@@ -227,7 +221,7 @@ while True:
     display.text(
         NAME, ((WIDTH - text_width) // 2), HEIGHT // 2 - text_height // 2, scale=10
     )
-    
+
     # Check for edge and object collisions which updates the velocity accordingly
     for num in range(len(logos)):
         logo = logos[num]

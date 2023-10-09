@@ -91,7 +91,7 @@ humidity_readings = []
 
 # set up
 vector.set_antialiasing(ANTIALIAS_X16)
-vector.set_font("OpenSans-Bold.af", 80)
+vector.set_font("/co2/OpenSans-Bold.af", 80)
 display.set_pen(WHITE)
 vector.text("Waiting for sensor to be ready", 0, 0)
 display.update()

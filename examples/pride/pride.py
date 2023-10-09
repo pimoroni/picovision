@@ -13,7 +13,7 @@ png = pngdec.PNG(display)
 WIDTH, HEIGHT = display.get_bounds()
 
 # If you want to add a PNG image, add the filename here
-IMAGE = "coolcrab.png"
+IMAGE = "/pride/coolcrab.png"
 
 # List of available pen colours, add more if necessary
 RED = display.create_pen(209, 34, 41)
