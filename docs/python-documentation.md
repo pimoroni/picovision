@@ -37,7 +37,7 @@ When initialising PicoGraphics for PicoVision you'll need to specify three thing
 * width
 * height
 
-Pen types are available as constants: `PEN_RG888`, `PEN_RGB555` and `PEN_P5`.
+Pen types are available as constants: `PEN_RGB888`, `PEN_RGB555` and `PEN_P5`.
 
 * `PEN_RGB888` - Eight bits per channel, 16m colours
 * `PEN_RGB555` - Five bits per channel, 32k colours
@@ -48,7 +48,7 @@ The width and height you must specify yourself based on your project, eg:
 ```python
 from picovision import PicoVision, PEN_RGB555
 
-display = PicoVision(PEN_RG555, 640, 480)
+display = PicoVision(PEN_RGB555, 640, 480)
 ```
 
 Higher resolutions at larger pen types will - usually - cost more to redraw.
