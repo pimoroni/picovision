@@ -68,6 +68,9 @@ MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_output_enable_obj, ModPicoG
 MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_pull_up_obj, ModPicoGraphics_set_gpu_io_pull_up);
 MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_pull_down_obj, ModPicoGraphics_set_gpu_io_pull_down);
 
+MP_DEFINE_CONST_FUN_OBJ_3(ModPicoGraphics_set_gpu_io_adc_enable_obj, ModPicoGraphics_set_gpu_io_adc_enable);
+MP_DEFINE_CONST_FUN_OBJ_2(ModPicoGraphics_get_gpu_io_adc_voltage_obj, ModPicoGraphics_get_gpu_io_adc_voltage);
+
 MP_DEFINE_CONST_FUN_OBJ_1(ModPicoGraphics_get_gpu_temp_obj, ModPicoGraphics_get_gpu_temp);
 
 // Loop
@@ -130,6 +133,9 @@ STATIC const mp_rom_map_elem_t ModPicoGraphics_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_gpu_io_output_enable), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_output_enable_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_gpu_io_pull_up), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_pull_up_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_gpu_io_pull_down), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_pull_down_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_set_gpu_io_adc_enable), MP_ROM_PTR(&ModPicoGraphics_set_gpu_io_adc_enable_obj) },
+    { MP_ROM_QSTR(MP_QSTR_get_gpu_io_adc_voltage), MP_ROM_PTR(&ModPicoGraphics_get_gpu_io_adc_voltage_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_get_gpu_temp), MP_ROM_PTR(&ModPicoGraphics_get_gpu_temp_obj) },
 

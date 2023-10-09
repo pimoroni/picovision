@@ -100,6 +100,9 @@ extern mp_obj_t ModPicoGraphics_set_gpu_io_output_enable(mp_obj_t self_in, mp_ob
 extern mp_obj_t ModPicoGraphics_set_gpu_io_pull_up(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable);
 extern mp_obj_t ModPicoGraphics_set_gpu_io_pull_down(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable);
 
+extern mp_obj_t ModPicoGraphics_set_gpu_io_adc_enable(mp_obj_t self_in, mp_obj_t pin, mp_obj_t enable);
+extern mp_obj_t ModPicoGraphics_get_gpu_io_adc_voltage(mp_obj_t self_in, mp_obj_t pin);
+
 extern mp_obj_t ModPicoGraphics_get_gpu_temp(mp_obj_t self_in);
 
 // Loop
