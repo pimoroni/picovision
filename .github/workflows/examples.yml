@@ -1,0 +1,50 @@
+name: MicroPython Examples
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    name: Pack Examples
+    runs-on: ubuntu-20.04
+
+    env:
+      RELEASE_FILE: pimoroni-picovision-examples-${{github.event.release.tag_name || github.sha}}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+        path: picovision
+
+    - name: Configure
+      shell: bash
+      working-directory: picovision
+      run: |
+        cmake -S . -B build -DCPACK_PACKAGE_FILE_NAME="${{env.RELEASE_FILE}}" -DCMAKE_INSTALL_PREFIX=build/install
+
+    - name: Pack Examples
+      shell: bash
+      working-directory: picovision
+      run: |
+        cmake --build build --target install package
+
+    - name: Store as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{env.RELEASE_FILE}}
+        path: picovision/build/install
+
+    - name: Upload release zip
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        asset_path: picovision/build/${{env.RELEASE_FILE}}.zip
+        upload_url: ${{github.event.release.upload_url}}
+        asset_name: ${{env.RELEASE_FILE}}.zip
+        asset_content_type: application/octet-stream
