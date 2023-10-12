@@ -1,7 +1,10 @@
 import time
 import pngdec
 from picographics import PicoGraphics, PEN_P5
-import pvgame
+try:
+    import pvgame
+except ImportError:
+    from sneks_and_ladders import pvgame
 import random
 
 t_start = time.ticks_ms()
