@@ -12,8 +12,6 @@ import breakout_scd41
 from picovector import Polygon, PicoVector, ANTIALIAS_X16
 
 i2c = PimoroniI2C(sda=6, scl=7)
-breakout_scd41.init(i2c)
-breakout_scd41.start()
 
 display = PicoVision(PEN_RGB555, 640, 480)
 button_a = display.is_button_a_pressed
@@ -91,10 +89,19 @@ humidity_readings = []
 
 # set up
 vector.set_antialiasing(ANTIALIAS_X16)
-vector.set_font("/co2/OpenSans-Bold.af", 80)
+vector.set_font("/co2/OpenSans-Bold.af", 50)
 display.set_pen(WHITE)
-vector.text("Waiting for sensor to be ready", 0, 0)
-display.update()
+
+try:
+    breakout_scd41.init(i2c)
+    breakout_scd41.start()
+    vector.text("Waiting for sensor to be ready", 0, 0)
+    display.update()
+except RuntimeError as e:
+    print(e)
+    vector.text("SCD41 breakout not detected :(", 0, 0)
+    vector.text("but you could buy one at pimoroni.com ;)", 0, HEIGHT - 120)
+    display.update()
 
 while True:
     if button_a():
