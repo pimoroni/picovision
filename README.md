@@ -6,12 +6,20 @@ This repository is home to the MicroPython build and examples for Pimoroni PicoV
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/pimoroni/picovision)](https://github.com/pimoroni/picovision/releases/latest/)
 
 - [Introduction](#introduction)
+- [Download MicroPython](#download-micropython)
 - [Documentation](#documentation)
-- [Community Projects](#community-projects)
+- [C/C++ Resources](#cc-resources)
+- [C/C++ Community Projects](#cc-community-projects)
 
 ## Introduction
 
 PicoVision enables you to create big, bold audio visual projects using MicroPython and an HDMI display of your choice.
+
+* :link: [Buy a PicoVision here](https://shop.pimoroni.com/products/picovision)
+
+## Download MicroPython
+
+* [PicoVision MicroPython Releases](https://github.com/pimoroni/picovision/releases)
 
 ## Documentation
 
@@ -19,10 +27,15 @@ PicoVision enables you to create big, bold audio visual projects using MicroPyth
 * [Docs: Hardware Overview](docs/hardware.md)
 * [Docs: Python](docs/python-documentation.md)
 * [Docs: Tips & Tricks](docs/tips-and-tricks.md)
-* [PicoVision MicroPython Releases](https://github.com/pimoroni/picovision/releases)
 
-## Community Projects
+## C/C++ Resources
 
-* :link: [PicoVision Micro Computer](https://github.com/Gadgetoid/picovision-micro-computer)
+* :link: [GPU Firmware](https://github.com/MichaelBell/pico-stick/)
+* :link: [C++ Boilerplate](https://github.com/pimoroni/picovision-boilerplate/)
+
+## C/C++ Community Projects
+
+* :link: [PicoVision Demos](https://github.com/technolhodgy/picovision-demos)
 * :link: [Mike's PicoVision Projects](https://github.com/MichaelBell/picovision-projects)
+* :link: [PicoVision Micro Computer](https://github.com/Gadgetoid/picovision-micro-computer)
 * :link: [Bad Apple for PicoVision](https://github.com/MichaelBell/badapple)
