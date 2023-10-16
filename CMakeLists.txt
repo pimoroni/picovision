@@ -5,6 +5,8 @@ project(PicoVision)
 install(FILES
     ${CMAKE_CURRENT_LIST_DIR}/examples/main.py
     ${CMAKE_CURRENT_LIST_DIR}/examples/rainbow_wheel.py
+    ${CMAKE_CURRENT_LIST_DIR}/examples/screenmodes.py
+    ${CMAKE_CURRENT_LIST_DIR}/examples/scrollgroups.py
     ${CMAKE_CURRENT_LIST_DIR}/examples/starfield_rainbow.py
     ${CMAKE_CURRENT_LIST_DIR}/examples/starfield.py
     ${CMAKE_CURRENT_LIST_DIR}/examples/vector_clock_smooth.py
