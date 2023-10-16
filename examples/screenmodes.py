@@ -157,7 +157,7 @@ while True:
             display.set_pen(RED)
             display.rectangle(20, modeSelect * 10 + 29, 125, 10)
             display.set_pen(WHITE)
-            display.text("Unsuported - Wide Only", 30, modeSelect * 10 + 30, 300, 1)
+            display.text("Unsupported - Wide Only", 30, modeSelect * 10 + 30, 300, 1)
             display.update()
             modeChange = 0
             time.sleep(0.25)
