@@ -42,9 +42,9 @@ You can also transfer files to boards running MicroPython using command line too
 
 ## Where are the examples?
 
-Note that most of our MicroPython images don't include examples, so you'll need to copy across the ones you want using Thonny. You can find all our MicroPython examples at the link below.
+You can find all our MicroPython examples at the link below. 
 
-- [MicroPython examples](/pimoroni/picovision/tree/main/examples)
+- [MicroPython examples](/examples)
 
 ## Troubleshooting
 
