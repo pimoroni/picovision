@@ -39,3 +39,4 @@ PicoVision enables you to create big, bold audio visual projects using MicroPyth
 * :link: [Mike's PicoVision Projects](https://github.com/MichaelBell/picovision-projects)
 * :link: [PicoVision Micro Computer](https://github.com/Gadgetoid/picovision-micro-computer)
 * :link: [Bad Apple for PicoVision](https://github.com/MichaelBell/badapple)
+* :link: [RP2040 Doom for PicoVision](https://github.com/MichaelBell/rp2040-doom)
