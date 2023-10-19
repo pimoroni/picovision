@@ -234,7 +234,7 @@ namespace pimoroni {
 
       // Configure the scroll offset index to use for a set of scanlines (inclusive of miny, exclusive of maxy),
       // this applies to the current bank only - you need to set again after flipping to apply the same setting to the other bank.
-      void set_scroll_idx_for_lines(int idx, int miny, int maxy);
+      virtual void set_scroll_idx_for_lines(int idx, int miny, int maxy);
 
       // Returns the state of GPU GPIOs 23-29 as a bitfield.
       uint8_t get_gpio();
