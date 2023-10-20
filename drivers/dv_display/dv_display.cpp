@@ -23,6 +23,38 @@ static void my_thread_yield() {
 }
 #endif
 
+namespace {
+  template <typename T>
+  bool is_transparent(T val);
+  
+  template <>
+  bool is_transparent(uint8_t val) {
+    return (val & 1) == 0;
+  }
+
+  template <>
+  bool is_transparent(uint16_t val) {
+    return (val & 0x8000) == 0;
+  }
+
+  template<typename T>
+  void get_sprite_limits(T* data, uint16_t width, uint8_t& offset, uint8_t& length)
+  {
+    offset = 0;
+    length = 0;
+    
+    for (uint16_t i = 0; i < width; ++i, ++data) {
+      if (offset == i) {
+        if (is_transparent(*data)) ++offset;
+        else length = 1;
+      }
+      else if (!is_transparent(*data)) {
+        length = i + 1 - offset;
+      }
+    }
+  }
+}
+
 namespace pimoroni {
   volatile bool enable_switch_on_vsync = false;
 
@@ -713,6 +745,32 @@ namespace pimoroni {
 
   void DVDisplay::define_sprite_internal(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint32_t* data, uint32_t bytes_per_pixel)
   {
+    // Work out the non-transparent part of each line to
+    // minimize the size of the sprite data the GPU needs to load
+    uint8_t offsets[32];
+    uint8_t lengths[32];
+
+    if (bytes_per_pixel == 1) {
+      uint8_t *byte_data = (uint8_t*)data;
+      for (uint16_t i = 0; i < height; ++i)
+      {
+        get_sprite_limits(byte_data, width, offsets[i], lengths[i]);
+        byte_data += width;
+      }    
+    }
+    else {
+      uint16_t *word_data = (uint16_t*)data;
+      for (uint16_t i = 0; i < height; ++i)
+      {
+        get_sprite_limits(word_data, width, offsets[i], lengths[i]);
+        word_data += width;
+      }
+    }
+
+    // Clip off the bottom of the image if it is empty
+    // Don't clip the top because that controls where the user positions the sprite.
+    while (height > 1 && lengths[height-1] == 0) --height;
+
     uint32_t buf[33];
     uint16_t* buf_ptr = (uint16_t*)buf;
     uint addr = sprite_base_address + sprite_data_idx * sprite_size;
@@ -721,7 +779,7 @@ namespace pimoroni {
 
     for (uint16_t i = 0; i < height; ++i)
     {
-      *buf_ptr++ = width << 8;
+      *buf_ptr++ = (lengths[i] << 8) | offsets[i];
     }
     uint len = (uint8_t*)buf_ptr - (uint8_t*)buf;
     ram.write(addr, buf, len);
@@ -729,19 +787,31 @@ namespace pimoroni {
     addr += len;
     if (len & 2) addr += 2;
 
-    ram.write(addr, (uint32_t*)data, width * height * bytes_per_pixel);
+    for (uint16_t i = 0; i < height; ++i)
+    {
+      uint8_t* byte_data = (uint8_t*)data + (width * i + offsets[i]) * bytes_per_pixel;
+      if ((uintptr_t)byte_data & 3) {
+        // Can only write from an aligned buffer
+        ram.wait_for_finish_blocking();
+        memcpy(buf, byte_data, lengths[i] * bytes_per_pixel);
+        ram.write(addr, buf, lengths[i] * bytes_per_pixel);
+      }
+      else {
+        ram.write(addr, (uint32_t*)byte_data, lengths[i] * bytes_per_pixel);
+      }
+      addr += lengths[i] * bytes_per_pixel;
+    }
+    ram.wait_for_finish_blocking();
   }
 
   void DVDisplay::define_sprite(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint16_t* data)
   {
     define_sprite_internal(sprite_data_idx, width, height, (uint32_t*)data, 2);
-    ram.wait_for_finish_blocking();
   }
 
   void DVDisplay::define_palette_sprite(uint16_t sprite_data_idx, uint16_t width, uint16_t height, uint8_t* data)
   {
     define_sprite_internal(sprite_data_idx, width, height, (uint32_t*)data, 1);
-    ram.wait_for_finish_blocking();
   }
 
   void DVDisplay::load_pvs_sprite(uint16_t sprite_data_idx, uint32_t* data, uint32_t len_in_bytes)
