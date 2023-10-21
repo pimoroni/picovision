@@ -12,7 +12,7 @@ We provide pre-built MicroPython images which include all the libraries and driv
 
 On the releases page you'll find two .uf2 files. A widescreen and a regular build of the PicoVision firmware.
 
-- [Releases page](https://github.com/pimoroni/pimoroni-picovision/releases)
+- [Releases page](https://github.com/pimoroni/picovision/releases)
 
 | Build                                                     | .uf2 File                                             |
 |-----------------------------------------------------------|-------------------------------------------------------|
