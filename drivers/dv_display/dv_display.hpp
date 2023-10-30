@@ -167,26 +167,54 @@ namespace pimoroni {
         }
       }
       
-      // 16bpp interface
-      void write_pixel(const Point &p, uint16_t colour);
-      void write_pixel_span(const Point &p, uint l, uint16_t colour);
-      void write_pixel_span(const Point &p, uint l, uint16_t *data);
-      void read_pixel_span(const Point &p, uint l, uint16_t *data);
-
-      // 24bpp interface
-      void write_pixel(const Point &p, RGB888 colour);
-      void write_pixel_span(const Point &p, uint l, RGB888 colour);
-      void write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
-      void read_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
-
       bool init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
       void flip();
       void reset();
+      void set_mode(Mode new_mode);
 
       // flip_async queues a flip but returns without blocking.
       // You must call wait_for_flip before doing any more reads or writes, defining sprites, etc.
       void flip_async();
       void wait_for_flip();
+
+      // 16bpp read/write interface
+      // ARGB1555, the "alpha" bit is used to represent depth, depth 1 may be drawn "on top" of sprites
+      // depending on the blend mode, depth 0 is always "below" sprites.
+      void write_pixel(const Point &p, uint16_t colour);
+      void write_pixel_span(const Point &p, uint l, uint16_t colour);
+      void write_pixel_span(const Point &p, uint l, uint16_t *data);
+      void read_pixel_span(const Point &p, uint l, uint16_t *data);
+
+      // 24bpp read/write interface
+      void write_pixel(const Point &p, RGB888 colour);
+      void write_pixel_span(const Point &p, uint l, RGB888 colour);
+      void write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
+      void read_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
+
+      // 32 colour palette read/write interface
+      // Palette mode has the colour number in bits 6-2 and alpha/depth in bit 0.
+      void write_palette_pixel(const Point &p, uint8_t colour);
+      void write_palette_pixel_span(const Point &p, uint l, uint8_t colour);
+      void write_palette_pixel_span(const Point &p, uint l, uint8_t* data);
+      void read_palette_pixel_span(const Point &p, uint l, uint8_t *data);
+
+      // 32 colour palette setup.  Note that palette entries range from 0-31,
+      // but when writing colour values the palette entry is in bits 6-2, so when using
+      // the write_palette_pixel function the entry value needs to be multiplied by 4.
+      // The palette idx can be 0 or 1 to allow you to flip between two palettes
+      void set_palette(RGB888 palette[PALETTE_SIZE], int palette_idx);
+      void set_palette_colour(uint8_t entry, RGB888 colour, int palette_idx);
+      RGB888* get_palette(uint8_t idx = 0);
+
+      // Set the palette index for the GPU to use (applies immediately, no flip required)
+      void set_display_palette_index(uint8_t idx);
+
+      // Convenience methods for setting a local palette index to modify and then 
+      // configuring it without explicitly specifying which palette is being modified
+      void set_local_palette_index(uint8_t idx);
+      void set_palette(RGB888 palette[PALETTE_SIZE]);
+      void set_palette_colour(uint8_t entry, RGB888 colour);
+      uint8_t get_local_palette_index();
 
       // Define the data for a sprite, the specified data index can then be supplied
       // to set_sprite to use the sprite.  Up to 1024 sprites can be defined.
@@ -206,25 +234,6 @@ namespace pimoroni {
       // Note sprite positions are always display relative (not scrolled)
       void set_sprite(int sprite_num, uint16_t sprite_data_idx, const Point &p, SpriteBlendMode blend_mode = BLEND_DEPTH, int v_scale = 1);
       void clear_sprite(int sprite_num);
-
-      // 32 colour palette mode.  Note that palette entries range from 0-31,
-      // but when writing colour values the palette entry is in bits 6-2, so the
-      // entry value is effectively multiplied by 4.
-      // The palette idx 
-      void set_mode(Mode new_mode);
-      void set_palette(RGB888 palette[PALETTE_SIZE], int palette_idx = 0);
-      void set_palette(RGB888 palette[PALETTE_SIZE]);
-      void set_palette_colour(uint8_t entry, RGB888 colour, int palette_idx);
-      void set_palette_colour(uint8_t entry, RGB888 colour);
-      void set_display_palette_index(uint8_t idx);
-      void set_local_palette_index(uint8_t idx);
-      uint8_t get_local_palette_index();
-      RGB888* get_palette(uint8_t idx = 0);
-
-      void write_palette_pixel(const Point &p, uint8_t colour);
-      void write_palette_pixel_span(const Point &p, uint l, uint8_t colour);
-      void write_palette_pixel_span(const Point &p, uint l, uint8_t* data);
-      void read_palette_pixel_span(const Point &p, uint l, uint8_t *data);
 
       // Set the scroll offset and wrap for a set of scanlines on the display.  There are 7 scroll offsets, indexes 1-7.
       // By default, all scanlines are offset by scroll idx 1, so setting this effectively moves the 
