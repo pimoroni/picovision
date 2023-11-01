@@ -23,6 +23,7 @@ PicoVision enables you to create big, bold audio visual projects using MicroPyth
 
 ## Documentation
 
+* :link: [Learn: Getting Started with PicoVision](https://learn.pimoroni.com/article/getting-started-with-picovision)
 * [Docs: Instructions for installing MicroPython](docs/setting-up-micropython.md)
 * [Docs: Hardware Overview](docs/hardware.md)
 * [Docs: Python](docs/python-documentation.md)
