@@ -1,3 +1,5 @@
+#pragma once
+
 #include "pico_graphics.hpp"
 #include "dv_display.hpp"
 
