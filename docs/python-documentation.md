@@ -149,6 +149,17 @@ display.clear_sprite(SPRITE_SLOT)
 
 Sprite images can be up to 64x32 big, but if the data is larger than 2kB then the following image index is not usable.  For example, if you load a 4kB (64x32) sprite into image index 1 you must not use image index 2.
 
+### Compatibility mode
+
+We've found that a few HDMI devices do not like the DVI signal PicoVision uses (especially cheap HDMI to USB adapters).  If you have no signal on a "full resolution" mode, e.g. 640x480, but it works with pixel doubled modes such as 320x240, then try adding `maximum_compatibility=True` to make the full resolution mode work, e.g:
+```python
+from picovision import PicoVision, PEN_RGB555
+
+display = PicoVision(PEN_RGB555, 640, 480, maximum_compatibility=True)
+```
+
+Note this slightly degrades the colours.
+
 ## Advanced Features
 
 ### Scanlines

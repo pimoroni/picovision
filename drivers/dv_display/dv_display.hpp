@@ -179,7 +179,9 @@ namespace pimoroni {
       void write_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
       void read_24bpp_pixel_span(const Point &p, uint len_in_pixels, uint8_t *data);
 
-      bool init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0);
+      // Maximum compatability mode allows full resolution modes to work with some more picky
+      // displays, although with slightly less accurate colours.
+      bool init(uint16_t width, uint16_t height, Mode mode = MODE_RGB555, uint16_t frame_width = 0, uint16_t frame_height = 0, bool maximum_compatibility = false);
       void flip();
       void reset();
 
