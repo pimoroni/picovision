@@ -91,7 +91,7 @@ namespace pimoroni {
 #endif
   };
 
-  bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_) {
+  bool DVDisplay::init(uint16_t display_width_, uint16_t display_height_, Mode mode_, uint16_t frame_width_, uint16_t frame_height_, bool maximum_compatibility) {
     display_width = display_width_;
     display_height = display_height_;
 
@@ -174,6 +174,7 @@ namespace pimoroni {
     mp_printf(&mp_plat_print, "Start I2C\n");
 
     if (res_mode != 0xFF) {
+      if (maximum_compatibility) res_mode |= 0x80;
       i2c->reg_write_uint8(I2C_ADDR, I2C_REG_SET_RES, res_mode);
     }
 
