@@ -93,7 +93,8 @@ In addition to colour, you can set the "depth" of a pen, putting drawn pixels be
 First, some terms-
 
 * Image Index - an index to identify where sprite image data should be stored
-* Sprite Slot - a single, hardware sprite. There are up to 80 (or 32 on widescreen versions).
+* Sprite Slot - a single, hardware sprite. There are up to 80 (or 32 on widescreen versions),
+  but note the hard limit of 10 simultaneous sprites per scanline as described in [Hardware - Sprites](hardware.md#sprites).
 
 ### Loading Sprites
 
@@ -114,10 +115,10 @@ If you omit the image index from `load_sprite` it will return a width, height an
 
 An animation usually requires a number of frames, so `load_animation()` is supplied to make loading them into PSRAM easier.
 
-For example, the following code would load four 32x32 frames from `my_character.png` and return a list of sprite slots starting at the one supplied:
+For example, the following code would load four 32x32 frames from `my_character.png` and return a list of image indexes starting at the one supplied:
 
 ```python
-FRAMES = display.load_animation(SPRITE_SLOT, "my_character.png", (32, 32), source=(0, 0, 32, 128))
+FRAMES = display.load_animation(IMAGE_FRAME_1, "my_character.png", (32, 32), source=(0, 0, 32, 128))
 ```
 
 You can use the `source` argument to specify a region of your image file to load, and the third argument - in this case given as `(32, 32)` - should be a tuple describing the width and height of your frames.
