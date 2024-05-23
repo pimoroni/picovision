@@ -97,6 +97,7 @@ def parse_xml_stream(s, accept_tags, group_by, max_items=7):
     text = b""
     count = 0
     current = {}
+
     while True:
         char = s.read(1)
         if len(char) == 0:
@@ -140,9 +141,9 @@ def parse_xml_stream(s, accept_tags, group_by, max_items=7):
 
             else:
                 current_tag = read_until(s, b">")
-                tag += [next_char + current_tag.split(b" ")[0]]
-                text = b""
-                gc.collect()
+                if not current_tag.endswith(b"/"):
+                    tag += [next_char + current_tag.split(b" ")[0]]
+                    text = b""
 
         else:
             text += char
