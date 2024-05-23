@@ -78,18 +78,16 @@ def sync_time():
         print("Unable to sync with NTP server. Check network and try again.")
 
 
-def read_until(stream, char):
+def read_until(stream, find):
     result = b""
-    while True:
-        c = stream.read(1)
-        if c == char:
+    while len(c := stream.read(1)) > 0:
+        if c == find:
             return result
         result += c
 
 
-def discard_until(stream, c):
-    while stream.read(1) != c:
-        pass
+def discard_until(stream, find):
+    _ = read_until(stream, find)
 
 
 def parse_xml_stream(s, accept_tags, group_by, max_items=7):
