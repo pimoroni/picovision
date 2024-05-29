@@ -23,8 +23,8 @@ static float pio_clkdiv;
 
 PIO swd_pio = pio0;
 
-extern const uint16_t pio_change_exclusive_program(PIO pio, const pio_program* prog);
-extern const void pio_remove_exclusive_program(PIO pio);
+uint16_t pio_change_exclusive_program(PIO pio, const pio_program* prog);
+void pio_remove_exclusive_program(PIO pio);
 
 static void wait_for_idle() {
     uint pull_offset = (pio_prog == &swd_raw_write_program) ? 2 : 
