@@ -9,6 +9,11 @@ DISPLAY_HEIGHT = 240
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
 
+# COMPATIBILITY = True
+# for some hardware that will not display some modes,
+# for normal operation leave COMPATIBILITY = False
+COMPATIBILITY = False 
+
 # number of modes listed in array
 numModes = 16
 # current mode being dispalyed
@@ -16,26 +21,26 @@ currentMode = 0
 # mode which will be selected with the Y button
 modeSelect = 0
 modes = [
-    (320, 240, 0),
-    (360, 240, 0),
-    (360, 288, 0),
-    (400, 225, 1),
-    (400, 240, 1),
-    (400, 300, 1),
-    (480, 270, 1),
-    (960, 270, 1),
-    (640, 480, 0),
-    (720, 480, 0),
-    (720, 576, 0),
-    (800, 450, 1),
-    (800, 480, 1),
-    (800, 600, 1),
-    (960, 540, 1),
-    (1280, 720, 1),
+    (320, 240, 0, False),
+    (360, 240, 0, False),
+    (360, 288, 0, False),
+    (400, 225, 1, False),
+    (400, 240, 1, False),
+    (400, 300, 1, False),
+    (480, 270, 1, False),
+    (960, 270, 1, COMPATIBILITY),
+    (640, 480, 0, COMPATIBILITY),
+    (720, 480, 0, COMPATIBILITY),
+    (720, 576, 0, COMPATIBILITY),
+    (800, 450, 1, COMPATIBILITY),
+    (800, 480, 1, COMPATIBILITY),
+    (800, 600, 1, COMPATIBILITY),
+    (960, 540, 1, COMPATIBILITY),
+    (1280, 720, 1, COMPATIBILITY),
 ]
 
 display = PicoGraphics(
-    PEN_RGB555, DISPLAY_WIDTH, DISPLAY_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT
+    PEN_RGB555, DISPLAY_WIDTH, DISPLAY_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT, maximum_compatibility=modes[0][3]
 )
 
 modeChange = 0
@@ -148,6 +153,7 @@ while True:
                     modes[currentMode][1],
                     FRAME_WIDTH,
                     FRAME_HEIGHT,
+                    maximum_compatibility=modes[modeSelect][3]
                 )
             else:
                 currentMode = modeSelect
@@ -178,6 +184,8 @@ while True:
                 modes[modeSelect][1],
                 FRAME_WIDTH,
                 FRAME_HEIGHT,
+                maximum_compatibility=modes[modeSelect][3]
             )
 
             modeChange = 4
+
