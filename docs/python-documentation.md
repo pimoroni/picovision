@@ -128,18 +128,18 @@ The `display_sprite` function serves both to display a sprite and to update its 
 
 ```python
 SPRITE_SLOT = 1
-display.display_sprite(SPRITE_SLOT, IMAGE_ELEPHANT, X, Y, blend_mode=SPRITE_OVERWRITE, v_scale=1)
+display.display_sprite(SPRITE_SLOT, IMAGE_ELEPHANT, X, Y, blend_mode=SPRITE_UNDER, v_scale=1)
 ```
 
 The sprite slot refers to a single "hardware" sprite. Each of these slots can display a specific image - referenced by its index - at a given X and Y position and with optional vertical scaling.
 
 The `blend` mode refers to one of the [sprite blend modes](hardware.md#sprite-blending), constants are provided for you:
 
-* `SPRITE_OVERWRITE` - 0
-* `SPRITE_UNDER` - 1
-* `SPRITE_OVER` - 2
-* `SPRITE_BLEND_UNDER` - 3
-* `SPRITE_BLEND_OVER` - 4
+* `SPRITE_OVERWRITE` (0)
+* `SPRITE_UNDER` (1)
+* `SPRITE_OVER` (2)
+* `SPRITE_BLEND_UNDER` (3)
+* `SPRITE_BLEND_OVER` (4)
 
 Once displayed the sprite will continue to display at its given X and Y coordinates without any intervention from your code. To remove it you need to clear it:
 
