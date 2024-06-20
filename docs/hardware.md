@@ -86,7 +86,7 @@ Displaying this 64x32 image will have roughly the same cost as displaying eight 
 
 In summary:
 
-1. There's a hard limit of 80 sprites on screen and a total of 56kB active sprite data
+1. There's a hard limit of 80 sprites on screen and a total of 54kB active sprite data
 2. There's a hard limit of 10 simultaneous sprites per scanline
 3. Each sprite can be up to 4kB in size, with a maximum width of 64 pixels and height of 32 pixels
 4. Sprite images are stored in PSRAM in "indexed" locations

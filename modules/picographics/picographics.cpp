@@ -171,13 +171,14 @@ MICROPY_EVENT_POLL_HOOK
 mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     ModPicoGraphics_obj_t *self = nullptr;
 
-    enum { ARG_pen_type, ARG_width, ARG_height, ARG_frame_width, ARG_frame_height };
+    enum { ARG_pen_type, ARG_width, ARG_height, ARG_frame_width, ARG_frame_height, ARG_maximum_compatibility };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_pen_type, MP_ARG_INT, { .u_int = PEN_DV_RGB888 } },
         { MP_QSTR_width, MP_ARG_INT, { .u_int = 320 } },
         { MP_QSTR_height, MP_ARG_INT, { .u_int = 240 } },
         { MP_QSTR_frame_width, MP_ARG_INT, { .u_int = -1 } },
-        { MP_QSTR_frame_height, MP_ARG_INT, { .u_int = -1 } }
+        { MP_QSTR_frame_height, MP_ARG_INT, { .u_int = -1 } },
+        { MP_QSTR_maximum_compatibility, MP_ARG_OBJ, { .u_obj = mp_const_false } }
     };
 
     // Parse args.
@@ -192,6 +193,7 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     int height = args[ARG_height].u_int;
     int frame_width = args[ARG_frame_width].u_int == -1 ? width : args[ARG_frame_width].u_int;
     int frame_height = args[ARG_frame_height].u_int == -1 ? height : args[ARG_frame_height].u_int;
+    bool maximum_compatability = mp_obj_is_true(args[ARG_maximum_compatibility].u_obj);
 
     if(frame_width < width || frame_height < height) {
         mp_raise_msg(&mp_type_RuntimeError, "PicoVision: Frame smaller than display!");
@@ -203,15 +205,15 @@ mp_obj_t ModPicoGraphics_make_new(const mp_obj_type_t *type, size_t n_args, size
     switch((PicoGraphicsPenType)pen_type) {
         case PEN_DV_RGB888:
             self->graphics = m_new_class(PicoGraphics_PenDV_RGB888, frame_width, frame_height, dv_display);
-            status = dv_display.init(width, height, DVDisplay::MODE_RGB888, frame_width, frame_height);
+            status = dv_display.init(width, height, DVDisplay::MODE_RGB888, frame_width, frame_height, maximum_compatability);
             break;
         case PEN_DV_RGB555:
             self->graphics = m_new_class(PicoGraphics_PenDV_RGB555, frame_width, frame_height, dv_display);
-            status = dv_display.init(width, height, DVDisplay::MODE_RGB555, frame_width, frame_height);
+            status = dv_display.init(width, height, DVDisplay::MODE_RGB555, frame_width, frame_height, maximum_compatability);
             break;
         case PEN_DV_P5:
             self->graphics = m_new_class(PicoGraphics_PenDV_P5, frame_width, frame_height, dv_display);
-            status = dv_display.init(width, height, DVDisplay::MODE_PALETTE, frame_width, frame_height);
+            status = dv_display.init(width, height, DVDisplay::MODE_PALETTE, frame_width, frame_height, maximum_compatability);
             break;
         default:
             break;
@@ -1063,7 +1065,7 @@ mp_obj_t ModPicoGraphics_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t 
     float scale = args[ARG_scale].u_obj == mp_const_none ? 2.0f : mp_obj_get_float(args[ARG_scale].u_obj);
     int angle = args[ARG_angle].u_int;
     int letter_spacing = args[ARG_spacing].u_int;
-    bool fixed_width = args[ARG_fixed_width].u_obj == mp_const_true;
+    bool fixed_width = mp_obj_is_true(args[ARG_fixed_width].u_obj);
 
     self->graphics->text(t, Point(x, y), wrap, scale, angle, letter_spacing, fixed_width);
 
@@ -1095,7 +1097,7 @@ mp_obj_t ModPicoGraphics_measure_text(size_t n_args, const mp_obj_t *pos_args, m
 
     float scale = args[ARG_scale].u_obj == mp_const_none ? 2.0f : mp_obj_get_float(args[ARG_scale].u_obj);
     int letter_spacing = args[ARG_spacing].u_int;
-    bool fixed_width = args[ARG_fixed_width].u_obj == mp_const_true;
+    bool fixed_width = mp_obj_is_true(args[ARG_fixed_width].u_obj);
 
     int width = self->graphics->measure_text(t, scale, letter_spacing, fixed_width);
 
