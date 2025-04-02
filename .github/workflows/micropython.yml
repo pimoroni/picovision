@@ -18,7 +18,7 @@ jobs:
     steps:
     - name: Workspace Cache
       id: cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{runner.workspace}}
         key: workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
@@ -28,7 +28,7 @@ jobs:
     # Check out MicroPython
     - name: Checkout MicroPython
       if: steps.cache.outputs.cache-hit != 'true'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: micropython/micropython
         ref: ${{env.MICROPYTHON_VERSION}}
@@ -93,13 +93,13 @@ jobs:
         restore-keys: |
           workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
         path: picovision
 
     # Check out Pimoroni Pico
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         repository: pimoroni/pimoroni-pico
         ref: ${{env.PIMORONI_PICO_VERSION}}
@@ -146,7 +146,7 @@ jobs:
         cp firmware.uf2 ${{env.RELEASE_FILE}}
 
     - name: Store .uf2 as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{env.RELEASE_FILE}}
         path: micropython/ports/rp2/build/${{env.RELEASE_FILE}}
