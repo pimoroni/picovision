@@ -58,7 +58,7 @@ def network_connect(ssid, psk):
         if wlan.status() < 0 or wlan.status() >= 3:
             break
         max_wait -= 1
-        print('waiting for connection...')
+        print("waiting for connection...")
         time.sleep(1)
 
     # Handle connection error.
@@ -151,8 +151,7 @@ def parse_xml_stream(s, accept_tags, group_by, max_items=7):
 def get_rss():
     try:
         stream = urequest.urlopen(URL)
-        output = list(parse_xml_stream(stream, [b"title", b"description", b"guid", b"pubDate"], b"item"))
-        return output
+        return list(parse_xml_stream(stream, [b"title", b"description", b"guid", b"pubDate"], b"item"))
 
     except OSError as e:
         print(e)

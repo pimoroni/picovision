@@ -269,7 +269,8 @@ def drawShip(s):
 
 
 while True:
-    for p in range(2):
+    # Twice to fill the front/back buffers
+    for _ in range(2):
         display.set_scroll_group_for_lines(1, 0, 30)
         display.set_scroll_group_for_lines(2, 30, 55)
         display.set_scroll_group_for_lines(3, 55, 75)

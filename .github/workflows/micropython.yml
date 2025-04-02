@@ -13,12 +13,12 @@ env:
 
 jobs:
   deps:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     name: Dependencies
     steps:
     - name: Workspace Cache
       id: cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{runner.workspace}}
         key: workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
@@ -28,7 +28,7 @@ jobs:
     # Check out MicroPython
     - name: Checkout MicroPython
       if: steps.cache.outputs.cache-hit != 'true'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: micropython/micropython
         ref: ${{env.MICROPYTHON_VERSION}}
@@ -57,7 +57,7 @@ jobs:
   build:
     needs: deps
     name: Build ${{matrix.name}}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
@@ -93,13 +93,13 @@ jobs:
         restore-keys: |
           workspace-micropython-${{env.MICROPYTHON_VERSION}}-${{env.WORKFLOW_VERSION}}
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
         path: picovision
 
     # Check out Pimoroni Pico
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         repository: pimoroni/pimoroni-pico
         ref: ${{env.PIMORONI_PICO_VERSION}}
@@ -113,16 +113,28 @@ jobs:
       run: |
         git apply "${{env.FIRMWARE_DIR}}/startup_overclock.patch"
 
-    - name: "HACK: CMakeLists.txt Disable C++ Exceptions Patch"
-      shell: bash
-      working-directory: micropython
-      run: git apply "${{env.FIRMWARE_DIR}}/micropython_nano_specs.patch"
-
     # Install apt packages
-    - name: Install CCache & Compiler
+    - name: Install CCache
       shell: bash
       run:
-        sudo apt update && sudo apt install ccache gcc-arm-none-eabi
+        sudo apt update && sudo apt install ccache
+
+    - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
+      uses: carlosperate/arm-none-eabi-gcc-action@v1
+      with:
+        release: '13.3.Rel1'
+
+    # CMake 4.0 - erroneously introduced into GitHub runners? -
+    # removed support for <3.5 and mbedtls hits this
+    # https://github.com/raspberrypi/pico-sdk/issues/2391
+    # https://github.com/actions/runner-images/issues/11926
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.31.6'
+
+    - name: CMake Version
+      run: cmake --version
 
     # Build firmware
     - name: Configure MicroPython
@@ -146,18 +158,13 @@ jobs:
         cp firmware.uf2 ${{env.RELEASE_FILE}}
 
     - name: Store .uf2 as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{env.RELEASE_FILE}}
         path: micropython/ports/rp2/build/${{env.RELEASE_FILE}}
 
     - name: Upload .uf2
       if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      uses: softprops/action-gh-release@v1
       with:
-        asset_path: micropython/ports/rp2/build/${{env.RELEASE_FILE}}
-        upload_url: ${{github.event.release.upload_url}}
-        asset_name: ${{env.RELEASE_FILE}}
-        asset_content_type: application/octet-stream
+        files: micropython/ports/rp2/build/${{env.RELEASE_FILE}}

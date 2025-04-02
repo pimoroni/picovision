@@ -132,6 +132,7 @@ def menu() -> str:
     omg_toasters = False
     last_button = time.ticks_ms() / 1000.0
 
+    # Twice to fill the front/back buffers
     for _ in range(2):
         display.set_scroll_group_for_lines(1, HEIGHT - 20, HEIGHT)
         display.set_scroll_group_offset(1, 0, 0, wrap_x=WIDTH)
@@ -198,7 +199,7 @@ def menu() -> str:
 
         scroll_position += (target_scroll_position - scroll_position) / 5
 
-        for y in range(0, int(HEIGHT / 2)):
+        for y in range(int(HEIGHT / 2)):
             bg = background_pen
             sl = scanline_pen
             if y <= 10:

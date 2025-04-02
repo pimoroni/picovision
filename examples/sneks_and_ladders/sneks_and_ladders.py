@@ -146,7 +146,7 @@ def draw_level():
     fire_tilemap = [0, 2, 1, 4, 3]
 
     # Repeat the frame sequence, adding one to each frame and wrapping on FIRE_FRAMES
-    for x in range(FIRE_FRAMES + 4):
+    for _ in range(FIRE_FRAMES + 4):
         next_step = [(n + 1) % FIRE_FRAMES for n in fire_tilemap[-FIRE_FRAMES:]]
         fire_tilemap += next_step
 

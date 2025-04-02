@@ -42,6 +42,7 @@ HQ = [HQ_1, HQ_2, HQ_3, HQ_4]
 # The pipe cap will hide any overshoot.
 SPRITE_PIPE_HEIGHT = 10
 
+# Twice to fill the front/back buffers
 for _ in range(2):
     # Pipes and goals
     display.load_sprite("/floppy_birb/pipe.png", SPRITE_PIPE, (0, 0, 20, SPRITE_PIPE_HEIGHT))
@@ -103,7 +104,7 @@ SCORE = [False for _ in range(LEVEL_SIZE)]
 game_state = GAME_GET_READY
 t_start = 0
 
-
+# Twice to fill the front/back buffers
 for _ in range(2):
     # Scroll position two for fixed top/bottom
     display.set_scroll_group_for_lines(2, 0, GAME_TOP - 20)
@@ -168,8 +169,8 @@ def draw_score():
 
 
 def prep_game():
-    # Prep the backdrop
-    for display_index in range(2):
+    # Prep the backdrop, twice to fill the front/back buffers
+    for _ in range(2):
         display.set_pen(GROUND)
         display.clear()
         display.set_pen(BLACK)
@@ -218,7 +219,8 @@ def reset_game():
 
     birb.reset()
 
-    for display_index in range(2):
+    # Twice to fill front/back buffer
+    for _ in range(2):
         draw_score()
         display.update()
 
@@ -265,8 +267,9 @@ class CollisionList:
                 action(**args)
 
     def debug(self, offset_x):
+        # Twice to fill the front/back buffers
         for _ in range(2):
-            for zone, action in self.zones:
+            for zone, _ in self.zones:
                 zx, zy, zw, zh = zone
                 display.set_pen(display.create_pen(255, 0, 0))
                 display.rectangle(zx + offset_x, zy, zw, zh)
@@ -358,7 +361,7 @@ def main_game_running(t_current):
         if hq_xoffset < GAME_WIDTH and hq_xoffset > -(hq * 32) - 32:
             spritelist.add(spr, hq_xoffset + (hq * 32), hq_yoffset)
 
-    for pipe in range(0, SLICES + 1):
+    for pipe in range(SLICES + 1):
         try:
             gap = PIPE_GAPS[level_offset + pipe]
             gap_width = GAP_WIDTHS[level_offset + pipe]

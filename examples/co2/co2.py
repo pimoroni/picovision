@@ -115,7 +115,7 @@ while True:
 
         # if lists are empty, populate the list with the current readings
         if len(co2_readings) == 0:
-            for i in range(MAX_READINGS):
+            for _ in range(MAX_READINGS):
                 co2_readings.append(co2)
                 temperature_readings.append(temperature)
                 humidity_readings.append(humidity)

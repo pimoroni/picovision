@@ -122,10 +122,9 @@ def connect_to_wifi():
         if wlan.isconnected():
             print("Connected to WiFi successfully.")
             return True
-        else:
-            print("Failed to connect to WiFi. Retrying...")
-            retries += 1
-            time.sleep(2)  # Wait for 2 seconds before retrying
+        print("Failed to connect to WiFi. Retrying...")
+        retries += 1
+        time.sleep(2)  # Wait for 2 seconds before retrying
 
     print("Failed to connect to WiFi after maximum retries.")
     return False
@@ -137,14 +136,13 @@ def get_data():
     if connect_to_wifi() is False:
         wifi_problem = True
         return
-    else:
-        wifi_problem = False
+    wifi_problem = False
 
     try:
         print("Setting time from NTP")
         ntptime.settime()
         print(f"Time set (UTC): {rtc.datetime()}")
-    except Exception as e:
+    except OSError as e:
         print(e)
 
     get_weather_data()
@@ -169,7 +167,7 @@ def get_weather_data():
         weathercode = current["weathercode"]
         date, now = current["time"].split("T")
         r.close()
-    except Exception as e:
+    except OSError as e:
         print(e)
 
 
@@ -186,13 +184,13 @@ def get_quote_data():
         quote = j[0]["content"]
         author = j[0]["author"]
         r.close()
-    except Exception as e:
+    except OSError as e:
         print(e)
 
 
 def calculate_bearing(d):
     # calculates a compass direction from the wind direction in degrees
-    dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+    dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
     ix = round(d / (360. / len(dirs)))
     return dirs[ix % len(dirs)]
 
