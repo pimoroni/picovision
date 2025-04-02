@@ -114,10 +114,15 @@ jobs:
         git apply "${{env.FIRMWARE_DIR}}/startup_overclock.patch"
 
     # Install apt packages
-    - name: Install CCache & Compiler
+    - name: Install CCache
       shell: bash
       run:
-        sudo apt update && sudo apt install ccache gcc-arm-none-eabi
+        sudo apt update && sudo apt install ccache
+
+    - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
+      uses: carlosperate/arm-none-eabi-gcc-action@v1
+      with:
+        release: '13.3.Rel1'
 
     # Build firmware
     - name: Configure MicroPython
