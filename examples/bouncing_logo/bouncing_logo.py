@@ -180,8 +180,8 @@ def draw_background():
     """Draws a gradient background"""
     t = time.ticks_ms() / 1000.0
     grid_size = 40
-    for y in range(0, HEIGHT // grid_size):
-        for x in range(0, WIDTH // grid_size):
+    for y in range(HEIGHT // grid_size):
+        for x in range(WIDTH // grid_size):
             h = x + y + int(t * 5)
             h = h / 50.0
 

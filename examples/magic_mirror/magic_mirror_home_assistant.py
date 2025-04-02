@@ -86,16 +86,11 @@ last_second = 0
 temperature = None
 wifi_problem = False
 
-buildings = []
 BUILDING_COUNT = 20
-for b in range(WIDTH // BUILDING_COUNT):
-    buildings.append(random.randint(0, HEIGHT // 6))
+buildings = [random.randint(0, HEIGHT // 6) for _ in range(WIDTH // BUILDING_COUNT)]
 
-
-stars = []
 STAR_COUNT = 50
-for s in range(STAR_COUNT):
-    stars.append((random.randint(0, WIDTH), random.randint(0, HEIGHT)))
+stars = [(random.randint(0, WIDTH), random.randint(0, HEIGHT)) for _ in range(STAR_COUNT)]
 
 
 # Connect to wifi
@@ -132,10 +127,9 @@ def connect_to_wifi():
         if wlan.isconnected():
             print("Connected to WiFi successfully.")
             return True
-        else:
-            print("Failed to connect to WiFi. Retrying...")
-            retries += 1
-            time.sleep(2)  # Wait for 2 seconds before retrying
+        print("Failed to connect to WiFi. Retrying...")
+        retries += 1
+        time.sleep(2)  # Wait for 2 seconds before retrying
 
     print("Failed to connect to WiFi after maximum retries.")
     return False
@@ -147,14 +141,13 @@ def get_data():
     if connect_to_wifi() is False:
         wifi_problem = True
         return
-    else:
-        wifi_problem = False
+    wifi_problem = False
 
     try:
         print("Setting time from NTP")
         ntptime.settime()
         print(f"Time set (UTC): {rtc.datetime()}")
-    except Exception as e:
+    except OSError as e:
         print(e)
 
     get_home_assistant_data()
@@ -177,7 +170,7 @@ def get_home_assistant_data():
         print(j)
         sunset_date, sunset_time = j["state"].split("T")
         r.close()
-    except Exception as e:
+    except OSError as e:
         print(e)
 
     print("Requesting Home Assistant data")
@@ -188,7 +181,7 @@ def get_home_assistant_data():
         print(j)
         sunrise_date, sunrise_time = j["state"].split("T")
         r.close()
-    except Exception as e:
+    except OSError as e:
         print(e)
 
 
@@ -238,8 +231,8 @@ def redraw_display_if_reqd():
 
         if sunrise_date and sunset_date is not None:
             # Convert the sunrise, sunset and RTC times to a common 'minutes since midnight' format, so we can compare:
-            sunrise_split = sunrise_time.split(':')
-            sunset_split = sunset_time.split(':')
+            sunrise_split = sunrise_time.split(":")
+            sunset_split = sunset_time.split(":")
             sunrise_minutes = (int(sunrise_split[0]) + UTC_OFFSET) * 60 + int(sunrise_split[1])
             sunset_minutes = (int(sunset_split[0]) + UTC_OFFSET) * 60 + int(sunset_split[1])
             rtc_minutes = (rtc.datetime()[4] + UTC_OFFSET) * 60 + rtc.datetime()[5]

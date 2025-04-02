@@ -130,7 +130,7 @@ while True:
     clip_max_y = max(second_hand_bounds[1] + second_hand_bounds[3], minute_hand_bounds[1] + minute_hand_bounds[3], hour_hand_bounds[1] + hour_hand_bounds[3]) + 5
 
     # Remember this clipping window for 2 frames time
-    last_clip.append((clip_x, clip_y, clip_max_x, clip_max_y),)
+    last_clip.append((clip_x, clip_y, clip_max_x, clip_max_y))
 
     # Expand to also cover the clipping window from 2 frames ago
     clip_x = min(clip_x, last_clip[0][0])

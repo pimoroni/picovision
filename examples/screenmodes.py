@@ -54,7 +54,8 @@ display.set_font("bitmap8")
 modechange = 0
 
 while True:
-    for p in range(2):
+    # Twice to fill the front/back buffers
+    for _ in range(2):
         if modeChange == 0:
             display.set_pen(0)
             display.clear()
@@ -92,7 +93,8 @@ while True:
             while display.is_button_x_pressed():
                 m = 0
 
-        for p in range(2):
+        # Twice to fill the front/back buffers
+        for _ in range(2):
             display.set_pen(DARKGREY)
             display.rectangle(14, 22, 137, numModes * 10 + 14)
             for f in range(numModes):

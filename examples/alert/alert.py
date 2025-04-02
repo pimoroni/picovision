@@ -55,10 +55,8 @@ button_y = Button(9)
 def make_starfield():
     # populates the starfield with random stars and ships
     global stars, pmc, ship
-    stars = []
     pmc = (random.randint(0, WIDTH - 50), random.randint(HEIGHT - 160, HEIGHT - 120))
-    for i in range(90):
-        stars.append((random.randint(8, WIDTH - 8), random.randint(HEIGHT - 180, HEIGHT - 100)))
+    stars = [(random.randint(8, WIDTH - 8), random.randint(HEIGHT - 180, HEIGHT - 100)) for _ in range(90)]
     ship = (random.randint(0, WIDTH - 50), random.randint(HEIGHT - 160, HEIGHT - 120), random.choice(SHIPS))
 
 
@@ -88,7 +86,7 @@ def full_refresh():
     frequency = 440
     # draw the elements that we don't need to redraw every time
     # we're drawing them twice, so they end up in both buffers
-    for i in range(2):
+    for _ in range(2):
         # clear the screen
         graphics.set_pen(BLACK)
         graphics.clear()
@@ -140,14 +138,12 @@ text_hue = 0.0
 graph_hue = 0.0
 pulse = 0.0
 pulse_direction = PULSE_SPEED
-graph_data = []
 frequency = 440
 
 # setup
 current_mode = MODES[0]
-# populate the graph data list with 12 random values between 1 and 100
-for i in range(12):
-    graph_data.append(random.randint(1, 100))
+# create the graph data list with 12 random values between 1 and 100
+graph_data = [random.randint(1, 100) for _ in range(12)]
 vector.set_antialiasing(ANTIALIAS_X16)
 full_refresh()
 
