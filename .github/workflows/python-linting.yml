@@ -11,15 +11,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install Python
+      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55
+      with:
+        python-version: '3.13'
+
     - name: Install Python Deps
-      run: python3 -m pip install ruff
+      run: pip install ruff
 
     - name: Lint PicoVision Examples
       shell: bash
       run: |
-        python3 -m ruff --show-source --ignore E501 examples/
+        ruff check --ignore E501 examples/
 
     - name: Lint PicoVision Python Libraries
       shell: bash
       run: |
-        python3 -m ruff --show-source --ignore E501,F401,F403 lib/
+        ruff check --ignore E501,F401,F403 lib/
