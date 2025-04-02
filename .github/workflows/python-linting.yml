@@ -17,14 +17,12 @@ jobs:
         python-version: '3.13'
 
     - name: Install Python Deps
-      run: pip install ruff
+      run: source ci/python.sh && qa_prepare_all
 
-    - name: Lint PicoVision Examples
+    - name: Lint MicroPython Examples
       shell: bash
-      run: |
-        ruff check --ignore E501 examples/
+      run: source ci/python.sh && qa_examples_check
 
-    - name: Lint PicoVision Python Libraries
+    - name: Lint MicroPython Modules
       shell: bash
-      run: |
-        ruff check --ignore E501,F401,F403 lib/
+      run: source ci/python.sh && qa_modules_check
